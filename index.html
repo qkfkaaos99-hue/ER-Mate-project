@@ -153,7 +153,7 @@
       <div class="input-header">▶ 스마트 오더 분석 / 프로토콜 검색</div>
       <div class="input-body">
         <textarea id="inputText" 
-          placeholder="[사용법]&#13;&#10;1. 의사 오더 복사/붙여넣기 → 퇴실/입원 체크리스트 생성&#13;&#10;2. 시술명(ERCP, CAG 등)만 입력 → 표준 지침서 즉시 조회&#13;&#10;&#13;&#10;Enter = 실행 / Shift+Enter = 줄바꿈" 
+          placeholder="[사용법]&#13;&#10;1. 의사 컨설트 복사/붙여넣기 → 퇴실/입원 체크리스트 생성&#13;&#10;2. 시술명(ERCP, CAG 등)만 입력 → 표준 지침서 즉시 조회&#13;&#10;&#13;&#10;Enter = 실행 / Shift+Enter = 줄바꿈" 
           oninput="updateBtn()" onpaste="setTimeout(updateBtn,50)" onchange="updateBtn()"
           onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();generate();}"></textarea>
         <button class="btn-run active" id="btnGen">⚡ ER Mate 분석 실행</button>
