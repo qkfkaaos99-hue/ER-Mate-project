@@ -135,7 +135,8 @@
   <div class="hdr-left">
     <span class="hdr-logo" style="background:var(--blue);">EM</span>
     <span class="hdr-title">ER Mate</span>
-    <span class="hdr-sub">AI Assistant v3.4</span>
+    <!-- === 버전 === -->
+    <span class="hdr-sub">v1.0 | 2025.02.19</span> 
   </div>
   <div class="hdr-right">
     <button class="btn-theme" id="btnTheme" onclick="toggleTheme()">☀️</button>
@@ -205,7 +206,7 @@ const PROCEDURE_DB = {
   },
   "EGD": {
     keywords: /\bEGD\b|위내시경|상부내시경|가스트로스코피/i,
-    prep: ["L-tube 제거", "위내시경 검사 동의서 확인", "출혈시 내시경적 지혈술(Hemostasis)/EVL 동의서 필요", "Pre-lab: CBC, PLT, PT/aPTT, ABO/Rh"],
+    prep: ["L-tube 있으면 제거", "위내시경 검사 동의서 확인", "출혈시 내시경적 지혈술(Hemostasis)/EVL 동의서 필요", "Pre-lab: CBC, PLT, PT/aPTT, ABO/Rh"],
     med: [],
     post: ["V/S 체크", "출혈 징후 관찰"],
     warning: [],
