@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ER Mate - 스마트 간호 도우미</title>
+<style>
+  /* === 테마 변수 === */
+  :root {
+    --bg: #0a0a0a; --bg2: #111; --bg3: #1a1a1a; --border: #2a2a2a; --border2: #1a1a1a;
+    --text: #e0e0e0; --text2: #9a9a9a; --text3: #888; --text-dim: #666;
+    --hdr-bg1: #1a2744; --hdr-bg2: #0f1a30; --hdr-border: #2a4a7a;
+    --blue: #7eb8f7; --green: #6adb6a; --red: #ff6b6b; --yellow: #f0c040; --orange: #f0a040;
+    --input-bg: #0a0a0a; --input-border: #333; --input-text: #e0e0e0;
+    --row-hover: #1a1a2a; --row-hl: #1a1010;
+    --cb-bg: #0a0a0a; --cb-border: #444; --cb-checked: #2a6a2a; --cb-checked-border: #4a8a4a;
+    --section-cond-bg1: #2a1515; --section-cond-bg2: #1a0a0a; --section-cond-border: #4a2020;
+    --section-mand-bg1: #152215; --section-mand-bg2: #0a150a; --section-mand-border: #2a3a2a;
+    --panel-hdr-bg1: #1e3050; --panel-hdr-bg2: #152238; --panel-hdr-border: #2a4a6a;
+    --modal-bg: #111; --modal-hdr-bg1: #3a3000; --modal-hdr-bg2: #2a2000; --modal-border: #4a3a00;
+    --modal-text: #ddd;
+    --complete-bg: #0a1a0a; --complete-border: #2a4a2a;
+    --overlay-bg: rgba(0,0,0,0.8);
+    --btn-ex-bg: #151515; --btn-ex-border: #2a2a2a; --btn-ex-text: #8aba8a;
+    --tab-bg: #1a1a1a; --tab-border: #333;
+    --task-text: #e8e8e8; --task-done: #555; --detail-done: #444;
+    --logo-bg: #2a6abf;
+    --dispo-bar-bg: #0f1a30;
+    --warn-bg: #1a1500; --warn-border: #4a3a00;
+    --prog-bg: #222;
+    --svg-check: #fff;
+  }
+  body.light {
+    --bg: #f4f5f7; --bg2: #fff; --bg3: #eef0f2; --border: #d0d4da; --border2: #e2e5ea;
+    --text: #1a1a2e; --text2: #555; --text3: #777; --text-dim: #999;
+    --hdr-bg1: #1e3a5f; --hdr-bg2: #15294a; --hdr-border: #2a5a9a;
+    --blue: #2a6abf; --green: #1a8a1a; --red: #d04040; --yellow: #b08000; --orange: #c07020;
+    --input-bg: #fff; --input-border: #c0c4ca; --input-text: #1a1a2e;
+    --row-hover: #e8eaf0; --row-hl: #fef0f0;
+    --cb-bg: #fff; --cb-border: #aaa; --cb-checked: #2a8a2a; --cb-checked-border: #1a6a1a;
+    --section-cond-bg1: #fef0f0; --section-cond-bg2: #fff5f5; --section-cond-border: #e0a0a0;
+    --section-mand-bg1: #f0faf0; --section-mand-bg2: #f5fff5; --section-mand-border: #a0c0a0;
+    --panel-hdr-bg1: #1e3a5f; --panel-hdr-bg2: #15294a; --panel-hdr-border: #2a5a9a;
+    --modal-bg: #fff; --modal-hdr-bg1: #fff3d0; --modal-hdr-bg2: #ffedaa; --modal-border: #d0a030;
+    --modal-text: #333;
+    --complete-bg: #f0faf0; --complete-border: #a0c0a0;
+    --overlay-bg: rgba(0,0,0,0.4);
+    --btn-ex-bg: #eef0f2; --btn-ex-border: #c0c4ca; --btn-ex-text: #2a7a2a;
+    --tab-bg: #eef0f2; --tab-border: #c0c4ca;
+    --task-text: #1a1a2e; --task-done: #aaa; --detail-done: #ccc;
+    --logo-bg: #2a6abf;
+    --dispo-bar-bg: #e8f0fa;
+    --warn-bg: #fff8e0; --warn-border: #d0a030;
+    --prog-bg: #d0d4da;
+    --svg-check: #fff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { min-height: 100vh; background: var(--bg); font-family: 'Malgun Gothic', -apple-system, sans-serif; color: var(--text); font-size: 13px; transition: background .2s, color .2s; }
+  header { background: linear-gradient(180deg, var(--hdr-bg1), var(--hdr-bg2)); border-bottom: 2px solid var(--hdr-border); padding: 6px 12px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .hdr-left { display: flex; align-items: center; gap: 8px; }
+  .hdr-logo { background: var(--logo-bg); color: #fff; font-weight: 800; font-size: 11px; padding: 3px 6px; border-radius: 2px; }
+  .hdr-title { color: #fff; font-weight: 700; font-size: 13px; }
+  .hdr-sub { color: #8aa; font-size: 11px; margin-left: 6px; }
+  .hdr-right { display: flex; align-items: center; gap: 6px; }
+  .btn-new { background: var(--hdr-bg1); border: 1px solid var(--hdr-border); color: #fff; padding: 6px 14px; font-size: 12px; cursor: pointer; border-radius: 2px; display: none; touch-action: manipulation; }
+  .btn-theme { background: none; border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 6px 10px; font-size: 14px; cursor: pointer; border-radius: 2px; line-height: 1; touch-action: manipulation; }
+  .btn-theme:hover { background: rgba(255,255,255,0.1); }
+  .toolbar { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 4px 12px; display: flex; gap: 2px; }
+  .tab { padding: 4px 14px; font-size: 11px; background: var(--tab-bg); border: 1px solid var(--tab-border); border-bottom: none; color: var(--yellow); border-radius: 3px 3px 0 0; font-weight: 700; }
+  main { max-width: 700px; margin: 0 auto; padding: 8px 10px 80px; }
+  .input-panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 2px; margin-bottom: 8px; }
+  .input-header { background: linear-gradient(180deg, var(--panel-hdr-bg1), var(--panel-hdr-bg2)); padding: 5px 10px; font-size: 11px; font-weight: 700; color: #fff; border-bottom: 1px solid var(--panel-hdr-border); }
+  .input-body { padding: 8px; }
+  textarea { width: 100%; min-height: 100px; padding: 8px; background: var(--input-bg); border: 1px solid var(--input-border); color: var(--input-text); font-family: 'Malgun Gothic', monospace; font-size: 12px; resize: vertical; outline: none; line-height: 1.7; border-radius: 1px; }
+  textarea:focus { border-color: var(--blue); }
+  textarea::placeholder { color: var(--text-dim); }
+  
+  .btn-run { width: 100%; margin-top: 6px; padding: 14px 0; background: var(--hdr-bg1); border: 1px solid var(--hdr-border); color: var(--text-dim); font-size: 14px; font-weight: 700; cursor: pointer; border-radius: 4px; -webkit-tap-highlight-color: rgba(0,0,0,0); touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+  .btn-run.active { color: #fff; background: var(--blue); border-color: var(--blue); }
+  .btn-run.active:active { opacity: 0.7; }
+  
+  .examples { padding: 6px 0; display: flex; flex-wrap: wrap; gap: 4px; }
+  .ex-label { font-size: 10px; color: var(--text3); margin-bottom: 4px; }
+  .btn-ex { padding: 6px 12px; background: var(--btn-ex-bg); border: 1px solid var(--btn-ex-border); color: var(--btn-ex-text); font-size: 12px; cursor: pointer; border-radius: 2px; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0); }
+  .result { animation: fi 0.15s ease; }
+  @keyframes fi { from{opacity:0} to{opacity:1} }
+  .dispo-bar { background: var(--dispo-bar-bg); border: 1px solid var(--hdr-border); border-radius: 2px; padding: 8px 10px; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .dispo-emoji { font-size: 16px; }
+  .dispo-type { font-size: 14px; font-weight: 800; }
+  .dispo-tag { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 2px; border: 1px solid; }
+  .dispo-info { font-size: 11px; color: var(--text2); margin-left: auto; }
+  .warn-bar { background: var(--warn-bg); border: 1px solid var(--warn-border); border-radius: 2px; padding: 6px 10px; margin-bottom: 6px; color: var(--yellow); font-size: 12px; }
+  .progress-row { display: flex; align-items: center; gap: 8px; padding: 5px 10px; background: var(--bg2); border: 1px solid var(--border); border-radius: 2px; margin-bottom: 8px; }
+  .prog-label { font-size: 10px; color: var(--text3); white-space: nowrap; }
+  .prog-track { flex: 1; height: 4px; background: var(--prog-bg); border-radius: 1px; overflow: hidden; }
+  .prog-fill { height: 100%; transition: width 0.3s; border-radius: 1px; }
+  .prog-text { font-size: 11px; font-weight: 700; white-space: nowrap; }
+  .section-hdr { border: 1px solid; border-radius: 2px; padding: 4px 10px; font-size: 11px; font-weight: 700; margin-bottom: 2px; display: flex; align-items: center; gap: 6px; }
+  .section-hdr.cond { color: var(--red); border-color: var(--section-cond-border); background: linear-gradient(180deg, var(--section-cond-bg1), var(--section-cond-bg2)); }
+  .section-hdr.mand { color: var(--green); border-color: var(--section-mand-border); background: linear-gradient(180deg, var(--section-mand-bg1), var(--section-mand-bg2)); }
+  .section-dot { width: 6px; height: 6px; border-radius: 1px; display: inline-block; }
+  .row { display: flex; align-items: flex-start; border-bottom: 1px solid var(--border2); cursor: pointer; transition: background 0.1s; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0); }
+  .row:hover { background: var(--row-hover); }
+  .row.done-row { opacity: 0.3; }
+  .row.hl { background: var(--row-hl); }
+  .row-check { width: 32px; min-height: 34px; display: flex; align-items: center; justify-content: center; border-right: 1px solid var(--border2); flex-shrink: 0; }
+  .cb { width: 14px; height: 14px; border: 1px solid var(--cb-border); background: var(--cb-bg); display: flex; align-items: center; justify-content: center; border-radius: 1px; }
+  .cb.checked { background: var(--cb-checked); border-color: var(--cb-checked-border); }
+  .cb svg { display: none; }
+  .cb.checked svg { display: block; }
+  .row-icon { width: 28px; min-height: 34px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+  .row-content { flex: 1; padding: 7px 10px; min-width: 0; }
+  .row-task { font-size: 13px; font-weight: 600; color: var(--task-text); line-height: 1.4; }
+  .row-task.done { color: var(--task-done); text-decoration: line-through; }
+  .row-detail { font-size: 12px; color: var(--text2); margin-top: 3px; line-height: 1.5; }
+  .row-detail.done { color: var(--detail-done); }
+  .complete-bar { background: var(--complete-bg); border: 1px solid var(--complete-border); border-radius: 2px; padding: 14px; text-align: center; margin-top: 8px; }
+  .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--overlay-bg); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 16px; }
+  .modal { background: var(--modal-bg); border: 2px solid var(--yellow); border-radius: 3px; max-width: 400px; width: 100%; box-shadow: 0 0 30px rgba(240,192,64,0.15); }
+  .modal-hdr { background: linear-gradient(180deg, var(--modal-hdr-bg1), var(--modal-hdr-bg2)); padding: 8px 12px; font-size: 13px; font-weight: 700; color: var(--yellow); border-bottom: 1px solid var(--modal-border); text-align: center; }
+  .modal-body { padding: 12px; }
+  .modal-item { display: flex; gap: 8px; margin-bottom: 5px; font-size: 12px; color: var(--modal-text); line-height: 1.6; }
+  .btn-modal-ok { width: 100%; margin-top: 10px; padding: 12px 0; background: linear-gradient(180deg, var(--modal-hdr-bg1), var(--modal-hdr-bg2)); border: 1px solid var(--modal-border); color: var(--yellow); font-size: 13px; font-weight: 700; cursor: pointer; border-radius: 2px; touch-action: manipulation; }
+  details { margin-top: 10px; }
+  summary { font-size: 11px; color: var(--text3); cursor: pointer; padding: 4px 0; border-bottom: 1px solid var(--border2); }
+  .edit-box { margin-top: 4px; }
+  .edit-box textarea { min-height: 80px; }
+  .btn-regen { width: 100%; margin-top: 4px; padding: 6px 0; background: var(--hdr-bg1); border: 1px solid var(--hdr-border); color: #fff; font-size: 11px; font-weight: 700; cursor: pointer; border-radius: 2px; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <div class="hdr-left">
+    <span class="hdr-logo" style="background:var(--blue);">EM</span>
+    <span class="hdr-title">ER Mate</span>
+    <span class="hdr-sub">AI Assistant v3.4</span>
+  </div>
+  <div class="hdr-right">
+    <button class="btn-theme" id="btnTheme" onclick="toggleTheme()">☀️</button>
+    <button class="btn-new" id="btnReset" onclick="resetAll()">새로고침</button>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="tab">워크스테이션</div>
+</div>
+
+<main>
+  <div id="inputScreen">
+    <div class="input-panel">
+      <div class="input-header">▶ 스마트 오더 분석 / 프로토콜 검색</div>
+      <div class="input-body">
+        <textarea id="inputText" 
+          placeholder="[사용법]&#13;&#10;1. 의사 오더 복사/붙여넣기 → 퇴실/입원 체크리스트 생성&#13;&#10;2. 시술명(ERCP, CAG 등)만 입력 → 표준 지침서 즉시 조회&#13;&#10;&#13;&#10;Enter = 실행 / Shift+Enter = 줄바꿈" 
+          oninput="updateBtn()" onpaste="setTimeout(updateBtn,50)" onchange="updateBtn()"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();generate();}"></textarea>
+        <button class="btn-run active" id="btnGen">⚡ ER Mate 분석 실행</button>
+      </div>
+    </div>
+    
+    <div class="ex-label">빠른 실행 (예시)</div>
+    <div class="examples" id="exCon">
+    </div>
+
+    <div style="margin-top:15px; padding:10px; background:var(--bg2); border:1px solid var(--border); border-radius:4px; font-size:11px; color:var(--text3);">
+      <strong>💡 Tip:</strong> 'ERCP', 'PTBD' 처럼 단어만 입력하면 시술 준비사항을 바로 알려드려요!
+    </div>
+  </div>
+
+  <div id="resultScreen" class="hidden result"></div>
+
+  <div id="reminderPopup" class="overlay hidden">
+    <div class="modal">
+      <div class="modal-hdr">⚡ 놓치기 쉬운 퇴원 오더 체크!</div>
+      <div class="modal-body">
+        <div class="modal-item"><span>📅</span><span>외래 예약 확인하셨나요? (직접 예약 or 주치의 확인)</span></div>
+        <div class="modal-item"><span>💊</span><span>퇴원약 접수 확인 & 남은 약 반납</span></div>
+        <div class="modal-item"><span>🧠</span><span>특수검사(EEG, Holter) 예약 확인</span></div>
+        <button class="btn-modal-ok" onclick="closeReminder()">네, 확인했습니다!</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const MANDATORY={discharge:[{id:"m_d1",task:"퇴원약 확인",detail:"정규:응급약국 보호자직접수령 / 비정규:기송관or보조원SMS",icon:"💊"},{id:"m_d2",task:"남은약 반납",detail:"반납용지+약→소독물실+60삐록 / 접수만된약→약국82)2592전화취소",icon:"↩️"},{id:"m_d3",task:"Line 제거",detail:"IV line 등 제거",icon:"💉"},{id:"m_d4",task:"퇴원간호기록지 전달",detail:"수납 전달",icon:"📄"},{id:"m_d5",task:"응급실퇴실간호기록",detail:"퇴실일시=간호기록'퇴원함'시간",icon:"✍️"},{id:"m_d6",task:"침상정리",detail:"#59삐록, 케이블·이름표·쓰레기정리",icon:"🧹"}],admission:[{id:"m_a1",task:"입원지시 확인",detail:"내과→EMO / 외과→진료과직접발행",icon:"📋"},{id:"m_a2",task:"병실배정",detail:"병동전화→자리+수속+인계시간확인",icon:"🛏️"},{id:"m_a3",task:"입원수속 안내",detail:"보호자에게 입원지시라벨→응급원무수납안내",icon:"🏥"},{id:"m_a4",task:"약 반납 확인",detail:"남은약 반납처리",icon:"↩️"},{id:"m_a5",task:"전과전동기록지",detail:"인계전 올려놓기",icon:"📄"},{id:"m_a6",task:"인계",detail:"검체·pen insulin등 함께인계. 수혈남으면 병동알리기",icon:"🤝"},{id:"m_a7",task:"이송등록",detail:"퇴실전 미리등록!(이름빠지면 이송못함)",icon:"🚶"},{id:"m_a8",task:"응급실퇴실간호기록",detail:"처치·검사·오더 재확인후 작성",icon:"✍️"},{id:"m_a9",task:"침상정리",detail:"#59삐록, 케이블·이름표정리",icon:"🧹"}],transfer:[{id:"m_t1",task:"전원동의서",detail:"주치의및의뢰한각과",icon:"📝"},{id:"m_t2",task:"전원소견서",detail:"이송수단·병원이름. 정규:전원전담간호사",icon:"📄"},{id:"m_t3",task:"의무기록복사",detail:"전원전담간호사",icon:"📋"},{id:"m_t4",task:"CD/DVD복사",detail:"비정규:PACS실82)3077→SMS보조원수령",icon:"💿"},{id:"m_t5",task:"전원회신확인",detail:"진료협력센터경유여부확인",icon:"📞"},{id:"m_t6",task:"구급차안내",detail:"사설기본8만원/채혈실#0896",icon:"🚑"},{id:"m_t7",task:"퇴실30분전V/S",detail:"문제시전원전담쌤알리기!",icon:"💓"},{id:"m_t8",task:"퇴원약확인",detail:"필요시퇴원약안내",icon:"💊"},{id:"m_t9",task:"외래예약확인",detail:"다음외래꼭확인!",icon:"📅"},{id:"m_t10",task:"응급실퇴실간호기록",detail:"작성&이름빼기",icon:"✍️"},{id:"m_t11",task:"침상정리",detail:"#59삐록정리",icon:"🧹"}]};
+
+const PROCEDURE_DB = {
+  "ERCP": {
+    keywords: /ERCP|이알씨피|내시경역행담췌관조영/i,
+    prep: ["진정 내시경적 역행성 담췌관 배액술 동의서 확인", "NPO(금식) 유지", "보호자 동반 필수", "Pre-lab: CBC, PT/aPTT"],
+    med: ["예방적 항생제 확인", "첫 ERCP 시 Futhan(Nafamostat) 투약할지 확인"],
+    post: ["4hr Post-lab: Amy/Lip + Abd supine/erect 확인", "Abd pain 사정"],
+    warning: ["⚠️ Pancreatitis 발생 주의", "⚠️ Massive Hydration(Hartmann Sol) 필요 가능성"],
+    transfer: ["소화기내시경센터"],
+    important: true,
+  },
+  "EGD": {
+    keywords: /\bEGD\b|위내시경|상부내시경|가스트로스코피/i,
+    prep: ["L-tube 제거", "위내시경 검사 동의서 확인", "출혈시 내시경적 지혈술(Hemostasis)/EVL 동의서 필요", "Pre-lab: CBC, PLT, PT/aPTT, ABO/Rh"],
+    med: [],
+    post: ["V/S 체크", "출혈 징후 관찰"],
+    warning: [],
+    transfer: ["소화기내시경센터"],
+    important: false,
+  },
+  "CFS": {
+    keywords: /\bCFS\b|대장내시경|콜로노스코피/i,
+    prep: ["대장내시경검사 동의서", "Haprep 투여 확인", "장정결 확인: #1 전날저녁 #2 당일아침"],
+    med: [],
+    post: ["V/S 체크", "Abd pain 사정"],
+    warning: [],
+    transfer: ["소화기내시경센터"],
+    important: false,
+  },
+  "SFS": {
+    keywords: /\bSFS\b|sigmoidoscopy|에스자결장내시경/i,
+    prep: ["에스자결장내시경검사 동의서", "Leclean solution 1~2회 장정결 확인"],
+    med: [],
+    post: ["V/S 체크", "Abd pain 사정"],
+    warning: [],
+    transfer: ["소화기내시경센터"],
+    important: false,
+  },
+  "CT": {
+    keywords: /\bCT\b/i,
+    prep: ["20G 이상 손목 위 Pressureline IV","조영제 전처치 필요시: Mucosten + Avil → 30분 후 촬영", "전처치 전 CT실 전화"],
+    med: [],
+    post: ["15분 후 영상병동뷰어 확인"],
+    warning: ["CT angio+3D: TNI 확인 & HR>70 → betaloc 후 30분 f/u"],
+    transfer: ["응급CT"],
+    important: false,
+  },
+  "MRI": {
+    keywords: /\bMRI\b/i,
+    prep: ["20G 이상 손목 위 Pressureline IV","Sedation 시: midazolam #1 출발 시 IVS", "준비물: O2, mask/nasal, ambu, O2 line, fitting mask", "이송모니터 + 전문/인턴 동반"],
+    med: [],
+    post: ["Sedation 후 의식/호흡 확인"],
+    warning: [],
+    transfer: ["응급 MRI"],
+    important: false,
+  },
+  "CAG": {
+    keywords: /\bCAG\b|심도자|관상동맥조영/i,
+    prep: ["심도자술 동의서 (봉합기 포함)", "CCU vs 병동 확인 — CCU면 입실동의서 추가", "Skin prep (사타구니) → DPP → Sandbag"],
+    med: [],
+    post: ["DPP 확인", "Sandbag 유지", "V/S 모니터링"],
+    warning: [],
+    transfer: ["심혈관조영실","위급상황아니면 S-CAR로 바꿔서 이송"],
+    important: false,
+  },
+  "BAE": {
+    keywords: /\bBAE\b|기관지동맥색전/i,
+    prep: ["동의서 2건: 색전술 + 봉합기", "Skin prep (사타구니) → DPP → Sandbag", "Foley 여부 확인"],
+    med: [],
+    post: ["검사 후 4~8hr ABR(절대안정)"],
+    warning: [],
+    transfer: ["본관 혈관조영실"],
+    important: false,
+  },
+  "PTBD": {
+    keywords: /\bPTBD\b|경피경간담즙배액/i,
+    prep: ["경피경간담도배액술(PTBD) 동의서"],
+    med: [],
+    post: ["QOD dressing", "2주 1번 bile bag change", "검체 → culture 주치의 noti","얇은 코니칼튜브"],
+    warning: [],
+    transfer: ["본관 혈관조영실"],
+    important: false,
+  },
+  "abdPCD": {
+    keywords: /\bPCD\b|경피적배액/i,
+    prep: ["복부경피배액술 동의서"],
+    med: [],
+    post: ["검체 btl → culture 나가는지 주치의 noti","얇은 코니칼튜브"],
+    warning: [],
+    transfer: ["본관 혈관조영실"],
+    important: false,
+  },
+  "chestPCD": {
+    keywords: /\bPCD\b|경피적배액/i,
+    prep: ["경피흉관삽관술 동의서","Chest bottle 걸이, 투약실에 네임라벨 붙이기","혈조 요청시 chest bottle 뜯지말고 보내기"],
+    med: [],
+    post: [],
+    warning: [],
+    transfer: ["암병원 혈관조영실"],
+    important: false,
+  },
+  "PCN": {
+    keywords: /\bPCN\b|경피적신루/i,
+    prep: ["경피적신루 설치술 동의서","좌우 확인 필수"],
+    med: [],
+    post: ["4hr ABR","QOD dressing"],
+    warning: [],
+    transfer: ["암병원 혈관조영실"],
+    important: false,
+  },
+  "홀터": {
+    keywords: /홀터|holter|24시간심전도/i,
+    prep: ["검사 전 얇은 런닝"],
+    med: [],
+    post: [],
+    warning: ["정규: 24시간 심전도방 예약 / 비정규: 1588-5700 전화 안내"],
+    transfer: [""],
+    important: false,
+  },
+  "EEG": {
+    keywords: /\bEEG\b|뇌파/i,
+    prep: [],
+    med: [],
+    post: [],
+    warning: ["정규: 우리가 예약 / 비정규: 1588-5700 안내"],
+    transfer: ["뇌파검사실"],
+    important: false,
+  },
+  "Echo": {
+    keywords: /\becho\b|심초음파|심에코/i,
+    prep: ["TTE면 동의서 필요없음","TEE면 경식도초음파 동의서"],
+    med: [],
+    post: [],
+    warning: ["주치의가 직접 예약","인턴도가능"],
+    transfer: ["심장초음파실"],
+    important: false,
+  }
+  
+};
+
+const DEPT_NOTES={"GS":"정규:외과사무실/비정규:수납라벨→병동","NS":"교수님어레인지 확인필요"};
+const UNIT_CONSENTS={"ICU":"중환자실입실동의서","CCU":"입실동의서+보호자상주설명","Stroke":"뇌졸중집중치료실동의서"};
+const EXAMPLES=[{label:"간단퇴원",text:"routine w/u상 특이소견 없어서 r/o URI\nD/C, IMHO opd f/u as scheduled"},{label:"교육포함퇴원",text:"[입원결과]\n퇴원\n[향후계획]\n호흡곤란 진행, 객혈 등 있으면 ER 재내원 교육함.\n산소포화도 측정 잘 하시도록함."},{label:"컨설트답변",text:"1. 귀과적으로 출혈의 위험성 높지 않다면, LMWH 단기간 유지, 추후 감량, 중단을 추천드립니다. 이에 대해서는 추후 신경과 외래로 FU 해주십시오.\n2. Sacral insufficiency fracture에 대해서는 정형외과 협진 추천드립니다.\n3. 신경과적으로는 LMWH 투약 유지한다면 aspirin 투약을 지속할 이유는 없을 것으로 판단합니다."},{label:"GS입원+OP",text:"GS adm, NPO, OP 내일 1st, lab/EKG/CXR 확인 바랍니다"},{label:"CCU입원",text:"CARD adm to CCU, CAG 예정\nlab/EKG 확인"},{label:"전원",text:"전원, 00병원 NS로\nCT/MRI CD 복사 필요"},{label:"ERCP입원",text:"GI adm, ERCP 시행 예정, NPO 유지\nENDO OPD f/u 1개월"},{label:"혈종퇴원+수혈",text:"[입원결과]\n퇴원\n[향후계획]\n* plt Tf 후 귀가\n* 발열 등 문제 있으면 재내원\n* 목요일 오전 외래 f/u"}];
+
+let activeTitle = null; // 검색 모드용 타이틀 변수
+
+function smartParse(text){
+const t=text;
+const r={disposition:null,departments:[],unit:null,procedures:[],opdItems:[],educationItems:[],npo:false,op:false,conditionalTasks:[],instructions:[],hasTransfusion:false};
+
+// --- Disposition ---
+const rsm=t.match(/입원결과[^\n]*\n([^\n]*)/);
+if(rsm){const rl=rsm[1];if(/전원|transfer/.test(rl))r.disposition="transfer";else if(/퇴원|D\/C|d\/c|discharge|귀가/.test(rl))r.disposition="discharge";else if(/입원|adm/i.test(rl))r.disposition="admission";}
+if(!r.disposition){if(["전원","transfer","이송"].some(k=>t.includes(k)))r.disposition="transfer";else if(/퇴원|D\/C|d\/c|discharge|귀가/.test(t))r.disposition="discharge";else if(/\badm\b/i.test(t))r.disposition="admission";}
+
+// --- 진료과 ---
+const dm={"IMR":["IMR","RESP","PULM","호흡기","호흡기내과","펄모","풀모"],"IMJ":["IMJ","RHEU","RH","류마","류마티스","류마티스내과","조인트"],"IMN":["IMN","NEPH","신장","신장내과","네프로","RENAL"],"IMHO":["IMHO","HEM","ONCO","HO","혈종","혈액종양","혈액종양내과","헴","옹코"],"IMI":["IMI","INFEC","IF","감내","감염","감염내과","인펙"],"IMG":["IMG","GI","GASTRO","소화기","소화기내과","위장관"],"IMC":["IMC","CV","CARD","CIRC","순환기","심장","심장내과","카디오"],"IME":["IME","ENDO","META","내분비","내분비내과","내분비대사","엔도"],"IMA":["IMA","ALLERGY","ALL","알레르기","알러지"],"IMHM":["IMHM","입전","입전의","입원전담","입원전담전문의"],"NP":["NP","PSY","정신","정신과","정신건강의학과","엔피"],"NR":["NR","NU","NEURO","신경과","뉴로","엔알"],"NS":["NS","N/S","NEUROSURG","신경외과","엔에스","SPINE","BRAIN"],"GS":["GS","SURG","외과","일반외과","쥐에스","HBP","UGI","LGI"],"CS":["CS","TS","THORACIC","흉부","흉부외과","흉외"],"OS":["OS","ORTHO","정형","정형외과","오에스","BONE"],"EM":["EM","ER","응급","응급의학과"],"PED":["PED","소아","소청과","페드"],"OBGY":["OBGY","산부인과","산과","부인과"],"URO":["URO","비뇨","비뇨의학과","유로"],"ENT":["ENT","OTO","이비인후과","이엔티"],"RM":["RM","REHAB","재활","재활의학과","알엠"]};
+for(const[d,ks]of Object.entries(dm))for(const k of ks)if(t.includes(k)&&!r.departments.includes(d))r.departments.push(d);
+
+// --- 특수 유닛 ---
+for(const u of Object.keys(UNIT_CONSENTS))if(t.toUpperCase().includes(u.toUpperCase()))r.unit=u;
+
+// --- 검사/시술: PROCEDURE_DB 키워드 매칭 ---
+const actionKw=/시행|예정|check|찍|보내|촬영|예약|의뢰|콜|call|준비|go|schedule/i;
+const imagingActionKw=/시행|예정|찍|보내|촬영|예약|콜|call|준비|go|schedule/i;
+const imagingExclude=/결과|소견|상|판독|reading|보면|에서|finding|review/i;
+for(const[name,proc]of Object.entries(PROCEDURE_DB)){
+  const m=t.match(proc.keywords);
+  if(m){
+    const idx=t.indexOf(m[0]);
+    const nearby=t.substring(Math.max(0,idx-30),Math.min(t.length,idx+m[0].length+30));
+    if(name==="CT"||name==="MRI"){
+      if(imagingActionKw.test(nearby)&&!imagingExclude.test(nearby))r.procedures.push(name);
+    } else {
+      if(actionKw.test(nearby))r.procedures.push(name);
+    }
+  }
+}
+
+// --- OPD ---
+const opdSet=new Set();
+const opdKw=/외래|OPD|opd|f\/u|F\/U|follow[- ]?up/i;
+t.split(/\n/).forEach(line=>{
+  const l=line.trim();
+  if(!opdKw.test(l))return;
+  let extracted=l.replace(/^[\*\-\d\.\)\s]+/,'').trim();
+  if(extracted.length>60){
+    const match=extracted.match(/.{0,25}(외래|OPD|f\/u|F\/U|follow[- ]?up).{0,25}/i);
+    if(match)extracted=match[0].trim();
+  }
+  if(extracted.length>3)opdSet.add(extracted);
+});
+const opdArr=[...opdSet];
+const opdFiltered=[];
+for(let i=0;i<opdArr.length;i++){
+  let skip=false;
+  for(let j=0;j<opdArr.length;j++){
+    if(i===j)continue;
+    const wi=opdArr[i].split(/\s+/),wj=opdArr[j].split(/\s+/);
+    const common=wi.filter(w=>w.length>1&&wj.includes(w));
+    if(common.length>=2&&opdArr[i].length>opdArr[j].length){skip=true;break;}
+  }
+  if(!skip)opdFiltered.push(opdArr[i]);
+}
+r.opdItems=opdFiltered;
+
+// --- 교육 ---
+const es=new Set();
+t.split(/[.\n]/).filter(l=>/교육함|교육하였|설명함|하시도록|재내원|재방문/.test(l)).forEach(l=>{const c=l.trim();if(c.length>3)es.add(c);});
+r.educationItems=[...es];
+
+// --- NPO ---
+if(/NPO|npo|금식/.test(t))r.npo=true;
+
+// --- OP ---
+const om=t.match(/(\bOP\b|수술)/gi);
+if(om)for(const m of om){const i=t.indexOf(m),nb=t.substring(Math.max(0,i-30),Math.min(t.length,i+m.length+30));if(/예정|내일|모레|1st|2nd|시행|진행|올라가/i.test(nb)&&!/아님|없|안 |불필요|불가|안함|취소|보류/i.test(nb)){r.op=true;break;}}
+
+// --- 진단서 ---
+if(/진단서|소견서/.test(t))r.conditionalTasks.push({id:"c_doc",task:"진단서/서류발급",detail:"주치의요청(2만원,부본1천원)",icon:"📑"});
+
+// --- 수혈 ---
+r.hasTransfusion=(/수혈|transfusion|RBC|FFP|pheresis|PLT Tf|plt tf/i.test(t));
+
+// --- 컨설트 지시사항 추출 ---
+const lines=t.split(/\n/);
+const instrKw=/유지|추천|권고|시행|중단|변경|감량|증량|추가|제거|시작|지속|투약|투여|처방|협진|consult|의뢰|해주|바랍니다|부탁|드립니다|하십시오|고려/i;
+const skipKw=/^입원경과|^입원결과|^향후계획|^퇴원장소|^진료기록|^\s*$/;
+
+for(let i=0;i<lines.length;i++){
+  const line=lines[i].trim();
+  if(!line||skipKw.test(line)||line.length<5)continue;
+  const isNumbered=/^\d+[\.\)]\s*/.test(line)||/^[\*\-]\s+/.test(line);
+  if(isNumbered||instrKw.test(line)){
+    const cleaned=line.replace(/^\d+[\.\)]\s*/,'').replace(/^[\*\-]\s+/,'').trim();
+    if(cleaned.length>5){
+      let cat="지시";
+      if(/유지|지속|투약|투여|처방|시작|증량/i.test(cleaned))cat="투약";
+      if(/중단|감량|제거|없을|불필요|이유는 없/i.test(cleaned))cat="투약변경";
+      if(/협진|consult|의뢰/i.test(cleaned))cat="협진";
+      if(/외래|OPD|opd|f\/u|FU|follow/i.test(cleaned))cat="외래";
+      if(/검사|촬영|imaging|MRI|CT|X-ray|lab|시행/i.test(cleaned))cat="검사";
+      if(cat==="외래"||cat==="교육")continue;
+      const icons={"투약":"💊","투약변경":"⚠️","협진":"🏥","검사":"🔬","지시":"📋"};
+      r.instructions.push({id:"instr_"+i,task:cat,detail:cleaned,icon:icons[cat]||"📋",category:cat});
+    }
+  }
+}
+return r;
+}
+
+function buildChecklist(p){
+  const items=[];
+  // 입원 시 과별/유닛별 참고
+  if(p.disposition==="admission"){
+    for(const d of p.departments)if(DEPT_NOTES[d])items.push({id:"dept_"+d,task:d+" 입원참고",detail:DEPT_NOTES[d],icon:"📌",type:"context",highlight:true});
+    if(p.unit&&UNIT_CONSENTS[p.unit])items.push({id:"unit_"+p.unit,task:p.unit+" 동의서",detail:UNIT_CONSENTS[p.unit],icon:"📝",type:"conditional",highlight:true});
+    if(p.npo)items.push({id:"c_npo",task:"NPO유지확인",detail:"금식상태유지",icon:"🚫",type:"conditional"});
+    if(p.op)items.push({id:"c_op",task:"수술동의서확인",detail:"마취·수술동의서",icon:"✂️",type:"conditional",highlight:true});
+  }
+  // 컨설트 지시사항
+  for(const instr of p.instructions)items.push({id:instr.id,task:instr.task,detail:instr.detail,icon:instr.icon,type:"conditional",highlight:instr.category==="투약변경"||instr.category==="협진"});
+  // 검사/시술
+  for(const procName of p.procedures){
+    const proc=PROCEDURE_DB[procName];
+    if(!proc)continue;
+    const pid="proc_"+procName;
+    if(proc.prep.length>0)items.push({id:pid+"_prep",task:procName+" 준비",detail:proc.prep.join(" / "),icon:"📋",type:"conditional"});
+    if(proc.med&&proc.med.length>0)items.push({id:pid+"_med",task:procName+" 투약",detail:proc.med.join(" / "),icon:"💊",type:"conditional"});
+    if(proc.post.length>0)items.push({id:pid+"_post",task:procName+" 사후관리",detail:proc.post.join(" / "),icon:"🔍",type:"conditional"});
+    if(proc.warning.length>0)items.push({id:pid+"_warn",task:procName+" 주의사항",detail:proc.warning.join(" / "),icon:"⚠️",type:"conditional",highlight:proc.important||false});
+    if(proc.transfer&&proc.transfer.filter(x=>x).length>0)items.push({id:pid+"_trans",task:procName+" 이송",detail:proc.transfer.join(" / "),icon:"🚑",type:"conditional"});
+  }
+  // OPD
+  for(const o of p.opdItems)items.push({id:"opd_"+o,task:"외래예약확인",detail:o,icon:"📅",type:"conditional",highlight:true});
+  // 교육
+  for(let i=0;i<p.educationItems.length;i++)items.push({id:"edu_"+i,task:"퇴원교육",detail:p.educationItems[i],icon:"📚",type:"conditional"});
+  // 기타 조건부
+  for(const c of p.conditionalTasks)items.push({...c,type:"conditional"});
+  // 수혈 - disposition별
+  if(p.hasTransfusion){
+    if(p.disposition==="admission")items.push({id:"c_bf",task:"수혈 병동인계",detail:"남은혈액 병동인계. MF hold 주치의확인",icon:"🩸",type:"conditional"});
+    else items.push({id:"c_bf",task:"수혈 완료확인",detail:"수혈완료 여부 확인",icon:"🩸",type:"conditional"});
+  }
+  // 필수
+  (MANDATORY[p.disposition]||[]).forEach(m=>items.push({...m,type:"mandatory"}));
+  return items;
+}
+
+let cl=[],cs={},cp=null,ci="";
+
+function updateBtn(){
+  const btn = document.getElementById("btnGen");
+  if(btn) btn.classList.add("active");
+}
+
+function generate(text) {
+  try {
+    const t = (text || document.getElementById("inputText").value).trim();
+    if (!t) {
+      alert("⚠️ 내용을 입력하거나 예시 버튼을 눌러주세요!");
+      return;
+    }
+    
+    // 모드 초기화
+    activeTitle = null;
+
+    // 1단계: 검색 모드 (키워드 입력 시 체크리스트로 변환)
+    if (t.length < 20) {
+      for (const [name, proc] of Object.entries(PROCEDURE_DB)) {
+        if (proc.keywords.test(t)) {
+          showProtocol(name);
+          return; 
+        }
+      }
+    }
+    // 2단계: 분석 모드
+    ci = t;
+    cp = smartParse(t);
+    cl = buildChecklist(cp);
+    cs = {};
+    document.getElementById("inputScreen").classList.add("hidden");
+    document.getElementById("resultScreen").classList.add("hidden");
+    document.getElementById("btnReset").style.display = "block";
+    if (cp.disposition === "discharge" || cp.disposition === "transfer") {
+      document.getElementById("reminderPopup").classList.remove("hidden");
+    }
+    render();
+  } catch (err) {
+    alert("오류 발생: " + err.message);
+  }
+}
+
+// 타이틀을 리스트에서 빼고 별도 변수(activeTitle)로 관리
+function showProtocol(procName) {
+  const proc = PROCEDURE_DB[procName];
+  cl = []; // 리스트 초기화
+  
+  // 헤더 설정 (리스트에 넣지 않음)
+  activeTitle = { name: procName, icon: "📘" };
+
+  const addItems = (list, prefix, tag, icon, isWarn) => {
+    list.forEach((txt, idx) => {
+      cl.push({
+        id: `${procName}_${prefix}_${idx}`,
+        task: txt,
+        detail: tag,
+        icon: icon,
+        type: "manual",
+        highlight: isWarn
+      });
+    });
+  };
+
+  if(proc.prep) addItems(proc.prep, "prep", "[준비]", "📋", false);
+  if(proc.med) addItems(proc.med, "med", "[투약]", "💊", false);
+  if(proc.post) addItems(proc.post, "post", "[사후]", "🔍", false);
+  if(proc.warning) addItems(proc.warning, "warn", "[주의]", "⚠️", true);
+  if(proc.transfer) addItems(proc.transfer.filter(x=>x), "transfer", "[이송]", "🚑", false);
+
+  cs = {};
+  document.getElementById("inputScreen").classList.add("hidden");
+  document.getElementById("resultScreen").classList.remove("hidden");
+  document.getElementById("btnReset").style.display = "block";
+  render();
+}
+
+function render(){
+  const c=document.getElementById("resultScreen");
+  const done=Object.values(cs).filter(Boolean).length;
+  const total=cl.length;
+  const pct=total?Math.round(done/total*100):0;
+  
+  let h = "";
+  
+  // 검색 모드일 때 타이틀 헤더
+  if(activeTitle) {
+      h += `<div class="complete-bar" style="background:var(--bg2); border:1px solid var(--blue); text-align:left; padding:12px; margin-bottom:10px; display:flex; align-items:center; gap:10px;">
+        <span style="font-size:20px;">${activeTitle.icon}</span>
+        <div>
+            <div style="font-size:15px; font-weight:700; color:var(--blue);">${activeTitle.name} 표준 지침</div>
+            <div style="font-size:11px; color:var(--text2);">시술 전후 간호 확인</div>
+        </div>
+      </div>`;
+  } else if (cp && cp.disposition) {
+      // 분석 모드: disposition bar + summary
+      const di={admission:{l:"입원",c:"var(--blue)",bc:"var(--hdr-border)",e:"🏥"},discharge:{l:"퇴원",c:"var(--green)",bc:"var(--section-mand-border)",e:"🏠"},transfer:{l:"전원",c:"var(--orange)",bc:"var(--warn-border)",e:"🚑"}};
+      const d=di[cp.disposition];
+      if(d){
+         const tags=cp.departments.map(dp=>`<span class="dispo-tag" style="color:${d.c};border-color:${d.c}">${dp}</span>`).join(' ');
+         const utag=cp.unit?`<span class="dispo-tag" style="color:var(--yellow);border-color:var(--yellow)">${cp.unit}</span>`:'';
+         const sum=[cp.instructions.length>0&&"지시"+cp.instructions.length+"건",cp.procedures.length>0&&"시술"+cp.procedures.length+"건",cp.opdItems.length>0&&"외래"+cp.opdItems.length+"건",cp.educationItems.length>0&&"교육"+cp.educationItems.length+"건",cp.npo&&"NPO",cp.op&&cp.disposition==="admission"&&"OP예정"].filter(Boolean).join(" · ")||"추가항목없음";
+         h+=`<div class="dispo-bar" style="border-color:${d.bc}"><span class="dispo-emoji">${d.e}</span><span class="dispo-type" style="color:${d.c}">${d.l}</span>${tags}${utag}<span class="dispo-info">${sum}</span></div>`;
+      }
+  } else if(cp && !cp.disposition) {
+      h+='<div class="warn-bar">⚠️ Disposition 판별 불가 — 입원/퇴원/전원 키워드를 찾지 못했습니다</div>';
+  }
+
+  h += `<div class="progress-row"><span class="prog-label">진행</span><div class="prog-track"><div class="prog-fill" style="width:${pct}%;background:${pct===100?'var(--green)':'var(--red)'}"></div></div><span class="prog-text" style="color:${pct===100?'var(--green)':'var(--red)'};">${done}/${total}</span></div>`;
+  
+  // 검색 모드: 섹션 구분 없이 바로 표시
+  if(activeTitle){
+    cl.forEach(i=>{h+=rItem(i);});
+  } else {
+    // 분석 모드: 지시에서 추출 / 필수 항목 구분
+    const cond=cl.filter(x=>x.type==="conditional"||x.type==="context");
+    const mand=cl.filter(x=>x.type==="mandatory");
+    if(cond.length>0){
+      h+=`<div class="section-hdr cond"><span class="section-dot" style="background:var(--red)"></span>지시에서 추출</div>`;
+      cond.forEach(i=>{h+=rItem(i);});
+    }
+    if(mand.length>0){
+      h+=`<div class="section-hdr mand" style="margin-top:6px"><span class="section-dot" style="background:var(--green)"></span>필수 항목</div>`;
+      mand.forEach(i=>{h+=rItem(i);});
+    }
+  }
+  
+  if(pct===100)h+=`<div class="complete-bar"><div style="font-size:24px;margin-bottom:4px">✅</div><div style="font-size:13px;font-weight:700;color:var(--green)">전체 완료</div></div>`;
+  
+  // 분석 모드일 때만 원문 보기
+  if(!activeTitle && ci) {
+      h+=`<details><summary>▶ 원문보기/수정</summary><div class="edit-box"><textarea oninput="ci=this.value">${esc(ci)}</textarea><button class="btn-regen" onclick="regen()">▶ 다시생성</button></div></details>`;
+  }
+  
+  c.innerHTML=h;
+  c.classList.remove("hidden");
+}
+
+function rItem(item){
+  const d=cs[item.id],hl=item.highlight&&!d;
+  const rc=d?"row done-row":(hl?"row hl":"row");
+  const ck=d?'<div class="cb checked"><svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="var(--svg-check)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>':'<div class="cb"></div>';
+  const tc=d?"row-task done":"row-task";
+  const dc=d?"row-detail done":"row-detail";
+  return `<div class="${rc}" onclick="tog('${item.id}')"><div class="row-check">${ck}</div><div class="row-icon">${item.icon}</div><div class="row-content"><div class="${tc}">${esc(item.task)}</div>${item.detail?`<div class="${dc}">${esc(item.detail)}</div>`:''}</div></div>`;
+}
+
+function tog(id){cs[id]=!cs[id];render();}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function closeReminder(){document.getElementById("reminderPopup").classList.add("hidden");}
+function resetAll(){location.reload();}
+function toggleTheme(){
+   document.body.classList.toggle('light');
+   localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');}
+function regen(){ const ta=document.querySelector("#resultScreen textarea"); if(ta){ci=ta.value; generate(ci);} }
+
+window.onload = function() {
+    if(localStorage.getItem('theme')==='light') document.body.classList.add('light');
+    updateBtn();
+
+    // 분석 실행 버튼
+    const btnGen = document.getElementById("btnGen");
+    if(btnGen){
+      btnGen.addEventListener('touchend', function(e){
+        e.preventDefault();
+        document.getElementById('inputText').blur();
+        generate();
+      });
+      btnGen.addEventListener('click', function(e){
+        generate();
+      });
+    }
+
+    // 예시 버튼
+    const ec=document.getElementById("exCon");
+    if(ec) {
+        EXAMPLES.forEach(ex=>{
+          const b=document.createElement("button");
+          b.className="btn-ex";
+          b.textContent=ex.label;
+          b.addEventListener('touchend', function(e){ e.preventDefault(); document.getElementById("inputText").value=ex.text; generate(ex.text); });
+          b.addEventListener('click', function(){ document.getElementById("inputText").value=ex.text; generate(ex.text); });
+          ec.appendChild(b);
+        });
+    }
+};
+</script>
+</body>
+</html>
