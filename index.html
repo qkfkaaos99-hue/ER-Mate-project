@@ -153,7 +153,12 @@
       <div class="input-header">▶ 스마트 오더 분석 / 프로토콜 검색</div>
       <div class="input-body">
         <textarea id="inputText" 
-          placeholder="[사용법]&#13;&#10;1. 의사 컨설트 복사/붙여넣기 → 퇴실/입원 체크리스트 생성&#13;&#10;2. 시술명(ERCP, CAG 등)만 입력 → 표준 지침서 즉시 조회&#13;&#10;&#13;&#10;Enter = 실행 / Shift+Enter = 줄바꿈" 
+          placeholder="[사용법]
+1. 컨설트 복사붙여넣기 → 퇴실 체크리스트 생성
+   📋 복사범위: [입원경과] ~ [퇴원장소] 까지
+2. 시술명(ERCP, CAG 등)만 입력 → 표준 지침서 즉시 조회
+
+Enter = 실행 / Shift+Enter = 줄바꿈" 
           oninput="updateBtn()" onpaste="setTimeout(updateBtn,50)" onchange="updateBtn()"
           onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();generate();}"></textarea>
         <button class="btn-run active" id="btnGen">⚡ ER Mate 분석 실행</button>
@@ -165,7 +170,8 @@
     </div>
 
     <div style="margin-top:15px; padding:10px; background:var(--bg2); border:1px solid var(--border); border-radius:4px; font-size:11px; color:var(--text3);">
-      <strong>💡 Tip:</strong> 'ERCP', 'PTBD' 처럼 단어만 입력하면 시술 준비사항을 바로 알려드려요!
+      <strong>💡 Tip:<strong>💡 Tip:</strong> 'ERCP', 'PTBD' 처럼 단어만 입력하면 시술 준비사항을 바로 알려드려요!<br>
+<strong>📋 복사범위:</strong> 진료기록조회 → <u>입원경과</u> ~ <u>퇴원장소</u>까지 드래그 복사 후 붙여넣기!
     </div>
   </div>
 
