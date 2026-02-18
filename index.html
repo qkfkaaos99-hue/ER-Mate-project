@@ -482,11 +482,11 @@ function buildChecklist(p){
     const proc=PROCEDURE_DB[procName];
     if(!proc)continue;
     const pid="proc_"+procName;
-    if(proc.prep.length>0)items.push({id:pid+"_prep",task:procName+" 준비",detail:proc.prep.join(" / "),icon:"📋",type:"conditional"});
-    if(proc.med&&proc.med.length>0)items.push({id:pid+"_med",task:procName+" 투약",detail:proc.med.join(" / "),icon:"💊",type:"conditional"});
-    if(proc.post.length>0)items.push({id:pid+"_post",task:procName+" 사후관리",detail:proc.post.join(" / "),icon:"🔍",type:"conditional"});
-    if(proc.warning.length>0)items.push({id:pid+"_warn",task:procName+" 주의사항",detail:proc.warning.join(" / "),icon:"⚠️",type:"conditional",highlight:proc.important||false});
-    if(proc.transfer&&proc.transfer.filter(x=>x).length>0)items.push({id:pid+"_trans",task:procName+" 이송",detail:proc.transfer.join(" / "),icon:"🚑",type:"conditional"});
+    proc.prep.forEach((txt,i)=>items.push({id:pid+"_prep_"+i,task:txt,detail:"["+procName+" 준비]",icon:"📋",type:"conditional"}));
+    if(proc.med)proc.med.forEach((txt,i)=>items.push({id:pid+"_med_"+i,task:txt,detail:"["+procName+" 투약]",icon:"💊",type:"conditional"}));
+    proc.post.forEach((txt,i)=>items.push({id:pid+"_post_"+i,task:txt,detail:"["+procName+" 사후]",icon:"🔍",type:"conditional"}));
+    proc.warning.forEach((txt,i)=>items.push({id:pid+"_warn_"+i,task:txt,detail:"["+procName+" 주의]",icon:"⚠️",type:"conditional",highlight:proc.important||false}));
+    if(proc.transfer)proc.transfer.filter(x=>x).forEach((txt,i)=>items.push({id:pid+"_trans_"+i,task:txt,detail:"["+procName+" 이송]",icon:"🚑",type:"conditional"}));
   }
   // OPD
   for(const o of p.opdItems)items.push({id:"opd_"+o,task:"외래예약확인",detail:o,icon:"📅",type:"conditional",highlight:true});
