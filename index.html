@@ -371,7 +371,7 @@ for(const[d,ks]of Object.entries(dm))for(const k of ks)if(t.includes(k)&&!r.depa
 for(const u of Object.keys(UNIT_CONSENTS))if(t.toUpperCase().includes(u.toUpperCase()))r.unit=u;
 
 // --- 검사/시술: PROCEDURE_DB 키워드 매칭 ---
-const actionKw=/시행|예정|check|찍|보내|촬영|예약|의뢰|콜|call|준비|go|schedule/i;
+const actionKw=/시행|예정|check|찍|보내|촬영|예약|의뢰|콜|call|준비|go|schedule|내일|모레|1st|2nd/i;
 const imagingActionKw=/시행|예정|찍|보내|촬영|예약|콜|call|준비|go|schedule/i;
 const imagingExclude=/결과|소견|상|판독|reading|보면|에서|finding|review/i;
 for(const[name,proc]of Object.entries(PROCEDURE_DB)){
