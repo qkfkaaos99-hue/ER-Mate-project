@@ -350,7 +350,7 @@ const PROCEDURE_DB = {
 
 const DEPT_NOTES={"GS":"정규:외과사무실/비정규:수납라벨→병동","NS":"교수님어레인지 확인필요"};
 const UNIT_CONSENTS={"ICU":"중환자실입실동의서","CCU":"입실동의서","Stroke":"뇌졸중집중치료실동의서"};
-const EXAMPLES=[{label:"간단퇴원",text:"routine w/u상 특이소견 없어서 r/o URI\nD/C, IMHO opd f/u as scheduled"},{label:"교육포함퇴원",text:"[입원결과]\n퇴원\n[향후계획]\n호흡곤란 진행, 객혈 등 있으면 ER 재내원 교육함.\n산소포화도 측정 잘 하시도록함."},{label:"컨설트답변",text:"1. 귀과적으로 출혈의 위험성 높지 않다면, LMWH 단기간 유지, 추후 감량, 중단을 추천드립니다. 이에 대해서는 추후 신경과 외래로 FU 해주십시오.\n2. Sacral insufficiency fracture에 대해서는 정형외과 협진 추천드립니다.\n3. 신경과적으로는 LMWH 투약 유지한다면 aspirin 투약을 지속할 이유는 없을 것으로 판단합니다."},{label:"GS입원+OP",text:"GS adm, NPO"},{label:"CCU입원",text:"CARD adm to CCU, CAG 예정\nlab/EKG 확인"},{label:"전원",text:"전원, 00병원 NS로\nCT/MRI CD 복사 필요"},{label:"ERCP입원",text:"GI adm, ERCP 시행 예정, NPO 유지\nENDO OPD f/u 1개월"},{label:"혈종퇴원+수혈",text:"[입원결과]\n퇴원\n[향후계획]\n* plt Tf 후 귀가\n* 발열 등 문제 있으면 재내원\n* 목요일 오전 외래 f/u"}];
+const EXAMPLES=[{label:"간단퇴원",text:"routine w/u상 특이소견 없어서 r/o URI\nD/C, IMHO opd f/u as scheduled"},{label:"교육포함퇴원",text:"[입원결과]\n퇴원\n[향후계획]\n호흡곤란 진행, 객혈 등 있으면 ER 재내원 교육함.\n산소포화도 측정 잘 하시도록함."},{label:"컨설트답변",text:"1. 귀과적으로 출혈의 위험성 높지 않다면, LMWH 단기간 유지, 추후 감량, 중단을 추천드립니다. 이에 대해서는 추후 신경과 외래로 FU 해주십시오.\n2. Sacral insufficiency fracture에 대해서는 정형외과 협진 추천드립니다.\n3. 신경과적으로는 LMWH 투약 유지한다면 aspirin 투약을 지속할 이유는 없을 것으로 판단합니다."},{label:"GS입원+OP",text:"GS adm, NPO, OP"},{label:"CCU입원",text:"CARD adm to CCU, CAG 예정\nlab/EKG 확인"},{label:"전원",text:"전원, 00병원 NS로\nCT/MRI CD 복사 필요"},{label:"ERCP입원",text:"GI adm, ERCP 시행 예정, NPO 유지\nENDO OPD f/u 1개월"},{label:"혈종퇴원+수혈",text:"[입원결과]\n퇴원\n[향후계획]\n* plt Tf 후 귀가\n* 발열 등 문제 있으면 재내원\n* 목요일 오전 외래 f/u"}];
 
 let activeTitle = null; // 검색 모드용 타이틀 변수
 
@@ -466,7 +466,14 @@ function buildChecklist(p){
     for(const d of p.departments)if(DEPT_NOTES[d])items.push({id:"dept_"+d,task:d+" 입원참고",detail:DEPT_NOTES[d],icon:"📌",type:"context",highlight:true});
     if(p.unit&&UNIT_CONSENTS[p.unit])items.push({id:"unit_"+p.unit,task:p.unit+" 동의서",detail:UNIT_CONSENTS[p.unit],icon:"📝",type:"conditional",highlight:true});
     if(p.npo)items.push({id:"c_npo",task:"NPO유지확인",detail:"금식상태유지",icon:"🚫",type:"conditional"});
-    if(p.op)items.push({id:"c_op",task:"수술동의서확인",detail:"마취·수술동의서",icon:"✂️",type:"conditional",highlight:true});
+    if(p.op){
+      const opProc=PROCEDURE_DB["OP"];
+      if(opProc){
+        if(opProc.prep.length>0)items.push({id:"op_prep",task:"OP 준비",detail:opProc.prep.join(" / "),icon:"📋",type:"conditional",highlight:true});
+        if(opProc.med&&opProc.med.length>0)items.push({id:"op_med",task:"OP 투약",detail:opProc.med.join(" / "),icon:"💊",type:"conditional"});
+        if(opProc.warning.length>0)items.push({id:"op_warn",task:"OP 주의사항",detail:opProc.warning.join(" / "),icon:"⚠️",type:"conditional",highlight:true});
+      }
+    }
   }
   // 컨설트 지시사항
   for(const instr of p.instructions)items.push({id:instr.id,task:instr.task,detail:instr.detail,icon:instr.icon,type:"conditional",highlight:instr.category==="투약변경"||instr.category==="협진"});
