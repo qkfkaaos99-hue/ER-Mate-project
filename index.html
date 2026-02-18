@@ -435,8 +435,8 @@ r.hasTransfusion=(/수혈|transfusion|RBC|FFP|pheresis|PLT Tf|plt tf/i.test(t));
 // --- 컨설트 지시사항 추출 ---
 const lines=t.split(/\n/);
 const instrKw=/유지|추천|권고|시행|중단|변경|감량|증량|추가|제거|시작|지속|투약|투여|처방|협진|consult|의뢰|해주|바랍니다|부탁|드립니다|하십시오|고려/i;
-const skipKw=/^입원경과|^입원결과|^향후계획|^퇴원장소|^진료기록|^\s*$/;
-
+const skipKw=/^입원경과|^입원결과|^향후계획|^퇴원장소|^진료기록|^\s*$|adm|입원/i;
+  
 for(let i=0;i<lines.length;i++){
   const line=lines[i].trim();
   if(!line||skipKw.test(line)||line.length<5)continue;
