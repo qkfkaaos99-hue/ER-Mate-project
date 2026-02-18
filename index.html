@@ -382,7 +382,7 @@ for(const[name,proc]of Object.entries(PROCEDURE_DB)){
     if(name==="CT"||name==="MRI"){
       if(imagingActionKw.test(nearby)&&!imagingExclude.test(nearby))r.procedures.push(name);
     } else {
-      if(actionKw.test(nearby))r.procedures.push(name);
+      if(name!=="OP"&&actionKw.test(nearby))r.procedures.push(name);
     }
   }
 }
@@ -469,7 +469,7 @@ function buildChecklist(p){
     if(p.op){
       const opProc=PROCEDURE_DB["OP"];
       if(opProc){
-        opProc.prep.forEach((txt,i)=>items.push({id:"op_prep_"+i,task:txt,detail:"[OP 준비]",icon:"📋",type:"conditional",highlight:true}));
+        opProc.prep.forEach((txt,i)=>items.push({id:"op_prep_"+i,task:txt,detail:"[OP 준비]",icon:"📋",type:"conditional",highlight:false}));
         opProc.med.forEach((txt,i)=>items.push({id:"op_med_"+i,task:txt,detail:"[OP 투약]",icon:"💊",type:"conditional"}));
         opProc.warning.forEach((txt,i)=>items.push({id:"op_warn_"+i,task:txt,detail:"[OP 주의]",icon:"⚠️",type:"conditional",highlight:true}));
       }
