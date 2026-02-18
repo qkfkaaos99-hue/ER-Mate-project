@@ -469,9 +469,9 @@ function buildChecklist(p){
     if(p.op){
       const opProc=PROCEDURE_DB["OP"];
       if(opProc){
-        if(opProc.prep.length>0)items.push({id:"op_prep",task:"OP 준비",detail:opProc.prep.join(" / "),icon:"📋",type:"conditional",highlight:true});
-        if(opProc.med&&opProc.med.length>0)items.push({id:"op_med",task:"OP 투약",detail:opProc.med.join(" / "),icon:"💊",type:"conditional"});
-        if(opProc.warning.length>0)items.push({id:"op_warn",task:"OP 주의사항",detail:opProc.warning.join(" / "),icon:"⚠️",type:"conditional",highlight:true});
+        opProc.prep.forEach((txt,i)=>items.push({id:"op_prep_"+i,task:txt,detail:"[OP 준비]",icon:"📋",type:"conditional",highlight:true}));
+        opProc.med.forEach((txt,i)=>items.push({id:"op_med_"+i,task:txt,detail:"[OP 투약]",icon:"💊",type:"conditional"}));
+        opProc.warning.forEach((txt,i)=>items.push({id:"op_warn_"+i,task:txt,detail:"[OP 주의]",icon:"⚠️",type:"conditional",highlight:true}));
       }
     }
   }
