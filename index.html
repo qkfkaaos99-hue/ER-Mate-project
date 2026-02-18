@@ -277,7 +277,7 @@ const PROCEDURE_DB = {
     important: false,
   },
   "abdPCD": {
-    keywords: /\bPCD\b|경피적배액/i,
+    keywords: /abd\s*PCD|복부\s*PCD|경피적복부배액|경피적배액/i,
     prep: ["복부경피배액술 동의서"],
     med: [],
     post: ["검체 btl → culture 나가는지 주치의 noti","얇은 코니칼튜브"],
@@ -286,7 +286,7 @@ const PROCEDURE_DB = {
     important: false,
   },
   "chestPCD": {
-    keywords: /\bPCD\b|경피적배액/i,
+    keywords: /chest\s*PCD|흉부\s*PCD|경피적흉부배액|pigtail/i,
     prep: ["경피흉관삽관술 동의서","Chest bottle 걸이, 투약실에 네임라벨 붙이기","혈조 요청시 chest bottle 뜯지말고 보내기"],
     med: [],
     post: [],
@@ -330,7 +330,22 @@ const PROCEDURE_DB = {
     transfer: ["심장초음파실"],
     important: false,
   }
-  
+  "OP": {
+    keywords: /\bOP\b|수술|응급수술|emergency op/i,
+    prep: [
+      "수술 전 Anti 투여 확인 (Antibiotics)",
+      "입원자리 확인 후 수속",
+      "수술 전 간호기록 작성",
+      "전과전동기록지 작성 (입원병동용)",
+      "Foley 삽입 여부 주치의 확인",
+      "수술동의서 확인 — 수술/마취동의서는 해당과에서 받음, ER에서는 수혈동의서까지만",
+    ],
+    med: ["수술 전 Antibiotics 투여 시간 확인"],
+    post: [],
+    warning: ["⚠️ S-car에 눕혀서 이송", "⚠️ 병동인계 후 이송보낸 시간에 이름빼기"],
+    transfer: [""],
+    important: true,
+  },
 };
 
 const DEPT_NOTES={"GS":"정규:외과사무실/비정규:수납라벨→병동","NS":"교수님어레인지 확인필요"};
