@@ -136,7 +136,7 @@
     <span class="hdr-logo" style="background:var(--blue);">EM</span>
     <span class="hdr-title">ER Mate</span>
     <!-- === 버전 === -->
-    <span class="hdr-sub">v1.1 | 2026.02.19</span> 
+    <span class="hdr-sub">v2.0 | 2026.02.19</span> 
   </div>
   <div class="hdr-right">
     <button class="btn-theme" id="btnTheme" onclick="toggleTheme()">☀️</button>
@@ -172,6 +172,7 @@ Enter = 실행 / Shift+Enter = 줄바꿈"
 
     <div style="margin-top:15px; padding:10px; background:var(--bg2); border:1px solid var(--border); border-radius:4px; font-size:11px; color:var(--text3);">
       <strong>💡 Tip:</strong> 'ERCP', 'PTBD' 처럼 단어만 입력하면 시술 준비사항을 바로 알려드려요!<br>
+<strong>📖 가이드:</strong> '수혈', 'CIV', 'enema', '고칼륨', 'I/O', '간호기록' 등 업무 키워드도 검색 가능!<br>
 <strong>📋 복사범위:</strong> 진료기록조회 → <u>입원경과</u> ~ <u>퇴원장소</u>까지 드래그 복사 후 붙여넣기!
     </div>
   </div>
@@ -438,8 +439,372 @@ const PROCEDURE_DB = {
   },
 };
 
+// ========== 업무 가이드 DB ==========
+const GUIDE_DB = {
+  "수혈": {
+    keywords: /수혈|transfusion|\bRBC\b|\bFFP\b|pheresis|\bPLT Tf\b|\bpRBC\b|혈액제제/i,
+    icon: "🩸",
+    items: [
+      {cat:"준비",txt:"수혈동의서 확인"},
+      {cat:"준비",txt:"구조사 call: ABO sample + 수혈 line 부탁드립니다"},
+      {cat:"준비",txt:"ABO 오더: 환자명 옆 혈액형 있으면 1개, 없으면 2개 (3일마다 채혈)"},
+      {cat:"준비",txt:"수혈 시 MF hold 여부 주치의 확인"},
+      {cat:"참고",txt:"FFP: 30분~1시간, 180ml / INR 교정 or Volume"},
+      {cat:"참고",txt:"Pheresis(PLT): 30분~1시간 / PLT 저하 시"},
+      {cat:"참고",txt:"RBC: 2~4시간, 400ml or 320ml / Hb 저하 시"},
+      {cat:"주의",txt:"⚠️ 남은 수혈 병동인계 시: ER 오더 유지 여부 확인"},
+      {cat:"주의",txt:"⚠️ 폐기/반납 시: 요청서(투약실) 주치의 사인 → NA님 전달"},
+    ]
+  },
+  "마약반납": {
+    keywords: /마약.*반납|마약반납|narcotic|마약관리/i,
+    icon: "💊",
+    items: [
+      {cat:"절차",txt:"mix 안 하고 반납: E사인 넣어서 보라색 없애기"},
+      {cat:"절차",txt:"mix 후 반납: 마약장에 넣고 X사인"},
+      {cat:"절차",txt:"마약현황조회 → 약물조회 → 반납량/사유 입력 → 반납내역 출력"},
+      {cat:"절차",txt:"'마약반납내역 출력지' + 환자약 함께 60번 NA님께 전달"},
+    ]
+  },
+  "enema": {
+    keywords: /enema|에네마|관장|kalimate|duphalac|lactulose|글리세린|glycerin|leclean/i,
+    icon: "💧",
+    items: [
+      {cat:"준비",txt:"찍찍이 기저귀(팬티형 절대 안됨) + 물티슈 미리 안내 → 기저귀 채워놓기"},
+      {cat:"Kalimate",txt:"Kalimate 5g×6포 + D5W 200ml → 15분 이상 참으라고 설명"},
+      {cat:"Duphalac",txt:"Lactulose 200ml [간성혼수용] — 50cc syringe + rectal tube + 윤활제 + 휴지"},
+      {cat:"Leclean",txt:"Leclean & Glycerin: 완제품 (비품 있음) / 수가: 글리세린 관장 or drug retention enema"},
+    ]
+  },
+  "CIV": {
+    keywords: /\bCIV\b|지속주입|continuous.*infusion|노에피|니카디핀|니트로|판토프라졸/i,
+    icon: "💉",
+    items: [
+      {cat:"처방",txt:"① NE(Norepinephrine) 4mcg/min = 15cc/hr — NE 3.2mg + D5W 196.8ml (total 200ml)"},
+      {cat:"처방",txt:"② NCD(Nicardipine) 1mg/hr = 5cc/hr — NCD 50mg + NS 200ml (total 250ml)"},
+      {cat:"처방",txt:"③ NG(Nitroglycerin) 10mcg/min = 3cc/hr — NG 20mg + D5W 80ml (total 100ml)"},
+      {cat:"처방",txt:"④ PPI(Pantoprazole/Nexium) 8mg/hr = 8cc/hr — PPI 80mg + NS 80ml (total 80ml)"},
+      {cat:"주의",txt:"⚠️ CIV 약물은 단독 line 사용 (PPI는 MF에 병용 가능)"},
+    ]
+  },
+  "고칼륨": {
+    keywords: /고칼륨|hyperkalemia|K\+.*높|칼륨.*높|potassium.*high|K교정/i,
+    icon: "⚡",
+    items: [
+      {cat:"투약",txt:"Calcium gluconate IV"},
+      {cat:"투약",txt:"D50% + Humulin R IV"},
+      {cat:"투약",txt:"30min / 1hr BST f/u"},
+      {cat:"투약",txt:"Kalimate enema 병행 가능"},
+      {cat:"참고",txt:"(KCl 15%) Potassium 40mEq/20ml + NS 500ml (over 4hr)"},
+    ]
+  },
+  "mix금기": {
+    keywords: /mix.*금기|배합금기|혼합금기|침전|같은.*라인/i,
+    icon: "🚫",
+    items: [
+      {cat:"금기",txt:"★ 같은 라인 mix 금지 — 모르는 약은 더블클릭해서 약품정보조회 확인 ★"},
+      {cat:"금기",txt:"Phosten(KH2PO4) + MgSO4 → 침전물 생김 / 투약순서: Mg → Ca → Phosten"},
+      {cat:"금기",txt:"Bivon(Bicarbonate sodium) + Calcium제제 → 크리스탈 생김"},
+      {cat:"금기",txt:"TPN + Triaxone → 칼슘함유용액 동시투여 불가 (침전위험)"},
+    ]
+  },
+  "투약속도": {
+    keywords: /투약.*속도|수액.*속도|drip.*rate|방울|cc\/hr/i,
+    icon: "⏱️",
+    items: [
+      {cat:"속도",txt:"40cc/hr = 3~4초에 1방울 = 24시간"},
+      {cat:"속도",txt:"80cc/hr = 2~3초에 1방울 = 12시간"},
+      {cat:"속도",txt:"120cc/hr = 1~2초에 1방울 = 8~9시간"},
+      {cat:"참고",txt:"[SUP] = Y사인 넣을 때마다 올라옴 / [TIT] 청구 → 투약 시 Y사인"},
+    ]
+  },
+  "TDM": {
+    keywords: /\bTDM\b|약물농도|digoxin|vanco|항경련제|면역억제제/i,
+    icon: "🔬",
+    items: [
+      {cat:"대상",txt:"Digoxin, Vancomycin, 항경련제, 면역억제제"},
+      {cat:"시점",txt:"보통 약 먹기 30min 전 채혈 (ER에서는 먹어도 나갈 때 있음)"},
+    ]
+  },
+  "ACTH": {
+    keywords: /\bACTH\b|synacthen|시낙텐|코티솔|cortisol.*test/i,
+    icon: "🧪",
+    items: [
+      {cat:"절차",txt:"ACTH 검사 오더 → 구조사 call: ACTH 검사 나가주세요"},
+      {cat:"절차",txt:"구조사가 ACTH + Cortisol(basal) 채혈"},
+      {cat:"절차",txt:"Synacthen IV shooting → 포시로 밀어주기"},
+      {cat:"절차",txt:"30min 후 Cortisol 채혈 → 60min 후 Cortisol 채혈"},
+      {cat:"참고",txt:"ACTH stimulation test 검사오더는 초기상태가 맞음 (수가 없음)"},
+    ]
+  },
+  "투석": {
+    keywords: /투석|dialysis|HD|혈액투석|\bperm cath\b|인공신장/i,
+    icon: "🫧",
+    items: [
+      {cat:"동의서",txt:"Perm cath 삽입시술 동의서 + 응급혈액투석시술동의서 (PTA 경피경혈관성형술)"},
+      {cat:"적응증",txt:"AVF malfunction이거나 없는 사람 → 응급투석"},
+      {cat:"이송",txt:"혈관조영실 → X-ray실 → 투석(인공신장실) 이송등록"},
+      {cat:"확인",txt:"투석실 전화: perm 꽂으러 가는데 XR 찍고 바로 투석 가도 되는지"},
+      {cat:"확인",txt:"Post XR confirm: 신장내과 전임의"},
+      {cat:"주의",txt:"⚠️ 투석 못하면 K+ level ▲"},
+    ]
+  },
+  "A-line": {
+    keywords: /a-line|art.*line|동맥라인|동맥관|에이라인/i,
+    icon: "📈",
+    items: [
+      {cat:"준비",txt:"수가: transducer + cannular + 나픽스 + 동맥혈압측정"},
+      {cat:"위치",txt:"A-line 카테터, 나픽스: 소생실"},
+      {cat:"위치",txt:"Pressure bag: 소생실"},
+      {cat:"위치",txt:"집게, 커넥터: 소생실"},
+    ]
+  },
+  "신환접수": {
+    keywords: /신환|신규환자|새환자|대기실.*환자|자리.*받은/i,
+    icon: "🆕",
+    items: [
+      {cat:"대기실",txt:"① 오더 screening, 처치 끊기 (예진실 IV set → IV 확보 + 수액 연결)"},
+      {cat:"대기실",txt:"② X-ray/CT/MRI 있으면 환자복 들고가기 (중자·대자 3구역 옷장)"},
+      {cat:"대기실",txt:"③ 채혈, X-ray, 금식, 보호자 상주 원칙 설명"},
+      {cat:"대기실",txt:"④ 환자 사정, V/S check"},
+      {cat:"대기실",txt:"⑤ 담당간호사 구역 안내 (안내 안하면 예진실 업무 마비)"},
+      {cat:"자리배정",txt:"① 오더 screening, 주증상, 과거력 확인 및 처치 끊기"},
+      {cat:"자리배정",txt:"② monitoring set, 환자복 준비"},
+      {cat:"자리배정",txt:"③ initial lab, CT, X-ray[p], MRI 등 call (0026/0099), 영상병동뷰어, 동의서"},
+      {cat:"자리배정",txt:"④ 환자 사정, monitor admit, V/S check"},
+      {cat:"자리배정",txt:"⑤ 금식, 보호자 상주 원칙 설명"},
+    ]
+  },
+  "간호기록": {
+    keywords: /간호기록|GCS|사지근력|pupil|NPI|의식수준/i,
+    icon: "📝",
+    items: [
+      {cat:"GCS-E",txt:"E4 자발적 눈뜸 / E3 소리에 / E2 통증에 / E1 눈뜨지 않음"},
+      {cat:"GCS-V",txt:"V5 지남력3+ / V4 지남력 하나라도- / V3 혼란 / V2 신음 / V1 발화없음 (기관절개·삽관 시 T)"},
+      {cat:"GCS-M",txt:"M6 obey / M5 통증 적극회피 / M4 소극회피 / M3 이상굴곡 / M2 이상신전 / M1 무반응"},
+      {cat:"근력",txt:"V: 정상(중력+검사자 저항) / IV: 약간 저항 / III: 들어올리나 못버팀 / II: 좌우만 / I: 움찔 / O: 없음"},
+      {cat:"Pupil",txt:"빛반사: prompt / hippus / sluggish / 없음 — NPI기계 소생실 위치, NPI≥3이면 prompt"},
+      {cat:"기록",txt:"타원 foley/PTBD/PCN/L-tube/C-line → 삽입일자, 교환주기, 드레싱일자 확인 후 기록"},
+    ]
+  },
+  "간호진단": {
+    keywords: /간호진단|nursing.*diagnosis/i,
+    icon: "📋",
+    items: [
+      {cat:"진단",txt:"출혈위험 / 출혈"},
+      {cat:"진단",txt:"비효율적 호흡 양상"},
+      {cat:"진단",txt:"조직관류 저하: 뇌, 심폐계, 신장 등"},
+      {cat:"진단",txt:"장폐색증 / 고칼륨혈증 / 저나트륨혈증"},
+      {cat:"진단",txt:"급성 통증"},
+      {cat:"진단",txt:"감염 위험 (CRP↑, 발열)"},
+      {cat:"진단",txt:"전염 위험 (Flu, Covid, TB 등)"},
+    ]
+  },
+  "드레싱주기": {
+    keywords: /드레싱|dressing|교환주기|medress|tegaderm|L-tube.*주기/i,
+    icon: "🩹",
+    items: [
+      {cat:"주기",txt:"Medress: 2일마다"},
+      {cat:"주기",txt:"Tegaderm: 1주일마다"},
+      {cat:"주기",txt:"L-tube: 4주마다"},
+      {cat:"주기",txt:"C-line: 안 쓸 경우 lumen마다 regurge/push 확인 → heparin locking"},
+    ]
+  },
+  "I/O": {
+    keywords: /\bI\/O\b|인아웃|intake.*output|소변량|urine.*output/i,
+    icon: "📊",
+    items: [
+      {cat:"시간",txt:"q6h: 06:00, 12:00, 18:00, 23:59"},
+      {cat:"시간",txt:"q8h: 08:00, 16:00, 23:59"},
+      {cat:"기록",txt:"Night 00:00에 23:59 기록과 동일하게 한번 더 기록"},
+      {cat:"기록",txt:"임상관찰기록: 전날 23:59 & 당일 00:00 fluid양 기록, 인퓨전펌프 제로잉"},
+      {cat:"범위",txt:"-500~+500 정상범위 / HF환자나 옵세 환자는 다 noti"},
+      {cat:"주의",txt:"I/O 오더 있는데 foley 없으면 → self 체크할건지 주치의 확인"},
+      {cat:"주의",txt:"F/D 환자: drip 포함해서 I/O noti / UO 적은 환자: 시간당 알려주기"},
+    ]
+  },
+  "약반납": {
+    keywords: /약.*반납|반납.*약|남은약|퇴원약.*반납/i,
+    icon: "↩️",
+    items: [
+      {cat:"반납",txt:"이미 올라온 약: '반납용지' + 약 → 소독물실 + 60번 삐록"},
+      {cat:"반납",txt:"접수만 된 약: 82)2592 or 2977 전화 → 접수취소"},
+      {cat:"주의",txt:"⚠️ 핑크색 [반납] 표시되어야 이름 뺄 수 있음!"},
+      {cat:"퇴원약",txt:"정규(10:30~17:30): 응급약국 보호자 직접 수령 안내"},
+      {cat:"퇴원약",txt:"비정규: 기송관 or 약국전화 후 보조원 SMS"},
+    ]
+  },
+  "접수취소": {
+    keywords: /접수.*취소|취소.*접수|비등록/i,
+    icon: "❌",
+    items: [
+      {cat:"절차",txt:"'응급환자비등록대장'에 환자이름 올라왔는지 확인"},
+      {cat:"절차",txt:"오더 D/C, 약·처치 다 반납 및 취소 확인"},
+      {cat:"절차",txt:"수납 call: 접수 취소해주세요"},
+    ]
+  },
+  "이송": {
+    keywords: /이송|환자.*이송|이송등록/i,
+    icon: "🚶",
+    items: [
+      {cat:"정규",txt:"환자이송 시스템 이용"},
+      {cat:"비정규",txt:"환자이송표 파일에 올려놓기"},
+      {cat:"비정규",txt:"#109 삐록: 0-0 ___가실 분 계십니다"},
+      {cat:"주의",txt:"⚠️ 퇴실 전 이송등록 미리! (이름 빠지면 이송 못함)"},
+    ]
+  },
+  "chest tube": {
+    keywords: /chest.*tube|흉관삽관|흉관/i,
+    icon: "🫁",
+    items: [
+      {cat:"준비",txt:"Chest tube set"},
+      {cat:"준비",txt:"멸균생리식염수 채워넣기 + 멸균장갑"},
+      {cat:"준비",txt:"Suction 할 경우: suction line + 거즈"},
+    ]
+  },
+  "post seizure": {
+    keywords: /seizure|발작|경련|포스트.*시져/i,
+    icon: "⚡",
+    items: [
+      {cat:"준비",txt:"Wall O2 + Face mask (reservoir+)"},
+      {cat:"준비",txt:"IV line 확보"},
+      {cat:"준비",txt:"Suction tip + Saline"},
+      {cat:"준비",txt:"장갑 + 헬멧"},
+      {cat:"투약",txt:"Keppra 2000mg loading: NS 150ml btl에 mix"},
+    ]
+  },
+  "파상풍": {
+    keywords: /파상풍|hyper-tet|boostrix|tetanus/i,
+    icon: "💉",
+    items: [
+      {cat:"확인",txt:"5년 이내 접종 이력 있으면 안 맞아도 됨 → 줄 때 물어보기"},
+      {cat:"투약",txt:"Hyper-tet: 냉장고 비품"},
+      {cat:"투약",txt:"Boostrix: 약국 call 필요 → 같이 요청"},
+      {cat:"주의",txt:"양쪽 팔에 따로 주기"},
+    ]
+  },
+  "heparin": {
+    keywords: /\bheparin\b|헤파린|heparinization/i,
+    icon: "💉",
+    items: [
+      {cat:"투약",txt:"IVS max 4000 unit"},
+      {cat:"투약",txt:"Heparinization 시 반드시 몸무게 측정"},
+      {cat:"참고",txt:"Heparin 1:100 희석 — 휴온스 heparin 1000unit/10cc (옴니셀 접수)"},
+    ]
+  },
+  "dalteparin": {
+    keywords: /dalteparin|달테파린|\bLMWH\b|저분자헤파린/i,
+    icon: "💉",
+    items: [
+      {cat:"적응증",txt:"PTE 환자"},
+      {cat:"용량",txt:">200 unit/kg/day [SC]"},
+      {cat:"확인",txt:"DPP 촉지해보기"},
+    ]
+  },
+  "terlipressin": {
+    keywords: /terlipressin|터리프레신/i,
+    icon: "💉",
+    items: [
+      {cat:"위치",txt:"냉장고에 있음"},
+      {cat:"투약",txt:"보통 2mg loading → 1mg qid, 보통 3일까지"},
+      {cat:"주의",txt:"이후 사용은 주치의 확인 필요"},
+    ]
+  },
+  "statin": {
+    keywords: /statin|lipitor|스타틴|리피토/i,
+    icon: "💊",
+    items: [
+      {cat:"적응증",txt:"NSTEMI 환자 → Lipitor(statin) + water P.O"},
+    ]
+  },
+  "steroid": {
+    keywords: /dexamethasone|덱사|스테로이드.*로딩|steroid.*loading/i,
+    icon: "💊",
+    items: [
+      {cat:"투약",txt:"Dexamethasone 10mg loading + 4mg/ml 유지"},
+      {cat:"참고",txt:"PPI 병용 가능"},
+    ]
+  },
+  "lasix": {
+    keywords: /lasix|라식스|furosemide|푸로세마이드/i,
+    icon: "💊",
+    items: [
+      {cat:"투약",txt:"투약 후 1hr effect 기록"},
+    ]
+  },
+  "Grasin": {
+    keywords: /grasin|그라신|\bG-CSF\b|\bANC\b.*낮/i,
+    icon: "💊",
+    items: [
+      {cat:"투약",txt:"Grasin 300mcg(비품) + D5W or NS 50ml 또는 SC"},
+      {cat:"투약",txt:"ANC 낮은 사람 보통 qd"},
+      {cat:"주의",txt:"⚠️ 150mcg랑 혼동주의!!"},
+    ]
+  },
+  "chemoport": {
+    keywords: /chemoport.*culture|케모포트.*배양|포트.*culture/i,
+    icon: "🧫",
+    items: [
+      {cat:"준비",txt:"Chemoport needle: 3구역 모니터링 넣는 곳에 있음"},
+      {cat:"주의",txt:"주임쌤한테 쓴다고 말하기 (주임쌤이 카운트)"},
+      {cat:"오더",txt:"Blood culture [central catheter, 혈액] — chemoport"},
+      {cat:"오더",txt:"Heparin 1:100 희석 오더 받아서 드리기"},
+    ]
+  },
+  "call업무": {
+    keywords: /call.*업무|콜업무|구조사.*업무|전문간호사.*업무|\bCPN\b.*업무/i,
+    icon: "📞",
+    items: [
+      {cat:"구조사",txt:"① initial lab, ECG, urine, B/Cx ② 6A lab ③ ABO sample ④ 추가 lab 및 IV 확보"},
+      {cat:"전문간호사",txt:"중환자 검사동반 / 동의서(마취,수술 제외) / L-tube·foley insertion / tapping needle 제거 / simple splint / 사망환자 카테터제거·suture / 심전도 / ECMO priming"},
+      {cat:"CPN",txt:"객담, 대변, tapping, 추가 urine 검체"},
+      {cat:"CPN",txt:"흉통계 initial EKG + 2hr F/U EKG / L-tube·foley insertion/irrigation"},
+    ]
+  },
+  "Night업무": {
+    keywords: /night.*job|나이트.*업무|야간.*업무|당일.*스케줄링/i,
+    icon: "🌙",
+    items: [
+      {cat:"스케줄링",txt:"당일 스케줄링: 전날과 비교하여 M/F, anti 등 약 확인"},
+      {cat:"I/O",txt:"00:00 기준 I/O 다시 시작 — 임상관찰기록에 23:59 & 00:00 기록, 인퓨전펌프 제로잉"},
+      {cat:"기록",txt:"임상관찰기록: 침상보조난간, 취침 전 배뇨 확인"},
+      {cat:"검사",txt:"BST 기기 QC"},
+      {cat:"검사",txt:"2~3A경 정규 [P]X-ray 콜(0050)"},
+      {cat:"검사",txt:"정규 lab: 6A"},
+    ]
+  },
+  "Day업무": {
+    keywords: /day.*job|데이.*업무|주간.*업무|eve.*job|이브.*업무/i,
+    icon: "☀️",
+    items: [
+      {cat:"업무",txt:"스케줄링 된 라벨 확인, 라운딩 후 정규 차팅"},
+      {cat:"업무",txt:"정규시간에 입원대기 환자 자리 확인"},
+      {cat:"업무",txt:"시술 cst 확인 후 술기방에서 동의서 받기"},
+      {cat:"주의",txt:"나이트 때는 주치의 코사인 문제로 미리 받지 않기로 함"},
+    ]
+  },
+  "NA업무": {
+    keywords: /\bNA\b.*업무|보조원|비품|기송관/i,
+    icon: "🧑‍⚕️",
+    items: [
+      {cat:"비품",txt:"비품 없는 약: 기송관 or 82)2592,2977 약국 전화 → SMS로 수령 요청"},
+      {cat:"Set",txt:"C-line, foley(bag 종류), tapping set → 자리에 준비 요청 → 파일에 라벨 붙이기"},
+      {cat:"정리",txt:"#59 삐록: 0-0 자리 정리 부탁드립니다"},
+    ]
+  },
+  "Anti투약": {
+    keywords: /\banti\b.*투약|항생제.*투약|antibiotics|anti.*culture/i,
+    icon: "💊",
+    items: [
+      {cat:"확인",txt:"Anti 투약 전 culture 나갈지 confirm (blood Cx 오더 없으면 받기)"},
+      {cat:"확인",txt:"나이트 근무 시 전날이랑 order 다르면 confirm"},
+      {cat:"OP",txt:"Oncall OP anti: ACT는 ER에서, anti는 mix clamping 또는 출발 시 start"},
+    ]
+  },
+};
+
 const DEPT_NOTES={"GS":"정규:외과사무실/비정규:수납라벨→병동","NS":"교수님어레인지 확인필요"};
-const UNIT_CONSENTS={"ICU":"중환자실입실동의서","CCU":"심혈관내과중환자실 입실동의서","Stroke":"뇌졸중집중치료실동의서 (보호자 24hr 1인 상주 필수)","LICU":"간집중치료실입실동의서 (보호자 24hr 1인 상주 필수, 114병동 소속)"};
+const UNIT_CONSENTS={"ICU":"중환자실입실동의서","CCU":"심혈관내과중환자실 입실동의서","Stroke":"뇌졸중집중치료실동의서 (보호자 24hr 1인 상주 필수) ☏0309","LICU":"간집중치료실입실동의서 (보호자 24hr 1인 상주 필수, 114병동) ☏2670"};
 const EXAMPLES=[{label:"간단퇴원",text:"routine w/u상 특이소견 없어서 r/o URI\nD/C, IMHO opd f/u as scheduled"},{label:"교육포함퇴원",text:"[입원결과]\n퇴원\n[향후계획]\n호흡곤란 진행, 객혈 등 있으면 ER 재내원 교육함.\n산소포화도 측정 잘 하시도록함."},{label:"컨설트답변",text:"1. 귀과적으로 출혈의 위험성 높지 않다면, LMWH 단기간 유지, 추후 감량, 중단을 추천드립니다. 이에 대해서는 추후 신경과 외래로 FU 해주십시오.\n2. Sacral insufficiency fracture에 대해서는 정형외과 협진 추천드립니다.\n3. 신경과적으로는 LMWH 투약 유지한다면 aspirin 투약을 지속할 이유는 없을 것으로 판단합니다."},{label:"GS입원+OP",text:"GS adm, NPO\nOP 내일 1st"},{label:"CCU입원",text:"CARD adm to CCU, CAG 예정\nlab/EKG 확인"},{label:"전원",text:"전원, 00병원 NS로\nCT/MRI CD 복사 필요"},{label:"ERCP입원",text:"GI adm, ERCP 시행 예정, NPO 유지\nENDO OPD f/u 1개월"}];
 
 let activeTitle = null; // 검색 모드용 타이틀 변수
@@ -629,12 +994,22 @@ function generate(text) {
         showProtocol(["abdPCD","chestPCD"]);
         return;
       }
+      // PROCEDURE_DB 검색
       const matched = [];
       for (const [name, proc] of Object.entries(PROCEDURE_DB)) {
         if (proc.keywords.test(t)) matched.push(name);
       }
       if (matched.length > 0) {
         showProtocol(matched.length === 1 ? matched[0] : matched);
+        return;
+      }
+      // GUIDE_DB 검색
+      const gMatched = [];
+      for (const [name, guide] of Object.entries(GUIDE_DB)) {
+        if (guide.keywords.test(t)) gMatched.push(name);
+      }
+      if (gMatched.length > 0) {
+        showGuide(gMatched);
         return;
       }
     }
@@ -653,6 +1028,43 @@ function generate(text) {
   } catch (err) {
     alert("오류 발생: " + err.message);
   }
+}
+
+// 가이드 표시 함수
+function showGuide(guideNames) {
+  if (typeof guideNames === 'string') guideNames = [guideNames];
+  cl = [];
+  
+  activeTitle = { name: guideNames.join(' / '), icon: "📖" };
+
+  guideNames.forEach(gName => {
+    const guide = GUIDE_DB[gName];
+    if (!guide) return;
+    if (guideNames.length > 1) {
+      cl.push({ id: gName+"_hdr", task: "━━ " + gName + " ━━", detail: "", icon: guide.icon||"📖", type: "manual", highlight: false });
+    }
+    let prevCat = "";
+    guide.items.forEach((item, idx) => {
+      const catChanged = item.cat !== prevCat;
+      prevCat = item.cat;
+      const isWarn = /주의|금기/.test(item.cat) || item.txt.startsWith("⚠️");
+      const icon = isWarn ? "⚠️" : (guide.icon||"📖");
+      cl.push({
+        id: `g_${gName}_${idx}`,
+        task: item.txt,
+        detail: catChanged ? "["+item.cat+"]" : "",
+        icon: icon,
+        type: "manual",
+        highlight: isWarn
+      });
+    });
+  });
+
+  cs = {};
+  document.getElementById("inputScreen").classList.add("hidden");
+  document.getElementById("resultScreen").classList.remove("hidden");
+  document.getElementById("btnReset").style.display = "block";
+  render();
 }
 
 // 타이틀을 리스트에서 빼고 별도 변수(activeTitle)로 관리
@@ -707,8 +1119,8 @@ function render(){
       h += `<div class="complete-bar" style="background:var(--bg2); border:1px solid var(--blue); text-align:left; padding:12px; margin-bottom:10px; display:flex; align-items:center; gap:10px;">
         <span style="font-size:20px;">${activeTitle.icon}</span>
         <div>
-            <div style="font-size:15px; font-weight:700; color:var(--blue);">${activeTitle.name} 표준 지침</div>
-            <div style="font-size:11px; color:var(--text2);">시술 전후 간호 확인</div>
+            <div style="font-size:15px; font-weight:700; color:var(--blue);">${activeTitle.name} ${activeTitle.icon==="📖"?"업무 가이드":"표준 지침"}</div>
+            <div style="font-size:11px; color:var(--text2);">${activeTitle.icon==="📖"?"ER 업무 참고사항":"시술 전후 간호 확인"}</div>
         </div>
       </div>`;
   } else if (cp && cp.disposition) {
