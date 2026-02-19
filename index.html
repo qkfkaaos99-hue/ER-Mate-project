@@ -409,6 +409,15 @@ const PROCEDURE_DB = {
     transfer: [""],
     important: false,
   },
+  "Stroke": {
+    keywords: /stroke|뇌졸중|SU|Stroke Unit|\bSU\b/i,
+    prep: ["뇌졸중집중치료실 입실 동의서 확인"],
+    med: ["DAPT 투여 스케줄 확인"],
+    post: ["104W에 자리확인"],
+    warning: ["⚠️ Neurological change 발생 시 즉시 보고", "⚠️ 낙상 고위험군 관리"],
+    transfer: ["뇌졸중 집중치료실 (☏ 0309)"],
+    important: false,
+  },
 };
 
 const DEPT_NOTES={"GS":"정규:외과사무실/비정규:수납라벨→병동","NS":"교수님어레인지 확인필요"};
