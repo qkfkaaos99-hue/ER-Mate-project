@@ -267,6 +267,15 @@ const PROCEDURE_DB = {
     transfer: ["본관 혈관조영실"],
     important: false,
   },
+  "Embolization": {
+    keywords: /\bEMBO\b|출혈환자색전술|에멀/i,
+    prep: ["출혈환자 색전술 동의서", "Skin prep (사타구니) → DPP → Sandbag", "Foley 여부 확인"],
+    med: [],
+    post: ["검사 후 4~8hr ABR(절대안정)","천자부위봉합기 사용시 1~2hr ABR(절대안정)"],
+    warning: [],
+    transfer: ["본관 혈관조영실"],
+    important: false,
+  },
   "PTBD": {
     keywords: /\bPTBD\b|경피경간담즙배액/i,
     prep: ["경피경간담도배액술(PTBD) 동의서"],
