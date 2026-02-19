@@ -136,7 +136,7 @@
     <span class="hdr-logo" style="background:var(--blue);">EM</span>
     <span class="hdr-title">ER Mate</span>
     <!-- === 버전 === -->
-    <span class="hdr-sub">v1.0 | 2026.02.19</span> 
+    <span class="hdr-sub">v1.1 | 2026.02.19</span> 
   </div>
   <div class="hdr-right">
     <button class="btn-theme" id="btnTheme" onclick="toggleTheme()">☀️</button>
@@ -233,7 +233,7 @@ const PROCEDURE_DB = {
   },
   "CT": {
     keywords: /\bCT\b/i,
-    prep: ["20G 이상 손목 위 Pressureline IV","조영제 전처치 필요시: Mucosten + Avil → 30분 후 촬영", "전처치 전 CT실 전화"],
+    prep: ["20G 이상 손목 위 Pressureline IV","조영제 전처치: Avil 다 들어간 후 30min, 스테로이드는 1hr 후 촬영","전처치 시작 전 CT실 전화해서 투약 시간 확인"],
     med: [],
     post: ["15분 후 영상병동뷰어 확인"],
     warning: ["CT angio+3D: TNI 확인 & HR>70 → betaloc 후 30분 f/u"],
@@ -341,7 +341,7 @@ const PROCEDURE_DB = {
   },
   "DJstent": {
     keywords: /\bDJ\b|DJ stent|요관부목|요관스텐트/i,
-    prep: ["역행성 신우 조영술 동의서 + 요관 부목 설치술 동의서","NPO 4시간","하의 속옷 탈의","On call 진통제 pethidine 또는 fentanyl mixed clamping"],
+    prep: ["역행성 신우 조영술 동의서 + 요관 부목 설치술 동의서","NPO 4시간","IV 확보 (Gauge 상관없음)","하의 속옷 탈의","On call 진통제 pethidine 또는 fentanyl mixed clamping"],
     med: [],
     post: ["V/S check","2hr ABR & supine — vasovagal syncope 위험 높음","소변 배출 관찰"],
     warning: ["DJ 교환 시: 역행성신우조영술 + 요관부목 교체술 동의서","DJ 제거 시: 요관부목 제거술 동의서만"],
@@ -418,10 +418,28 @@ const PROCEDURE_DB = {
     transfer: ["뇌졸중 집중치료실 (☏ 0309)"],
     important: false,
   },
+  "Tapping": {
+    keywords: /천자|tapping|\bascites tap\b|paracentesis|thoracentesis/i,
+    prep: ["천자 동의서 확인 (전문간호사/인턴 술기방)","자리 받기","BST 시행 (천자 전)","실보/냉보 몇cc 할건지 확인","Max drain 양 주치의 confirm"],
+    med: [],
+    post: ["검체 라벨링 (이름, 날짜, 시간, 부위)","4hr ABR","남은 검체 실보/냉보/폐기 주치의 확인"],
+    warning: ["T-tap 오더 시 #1 #2 #3 라벨 붙여서 나가기","drain 안 나오면 5분 대기 후 remove 요청"],
+    transfer: [""],
+    important: false,
+  },
+  "PCC": {
+    keywords: /\bPCC\b|심낭천자|pericardiocentesis/i,
+    prep: ["심낭천자술 동의서","보통 소생실에서 시행 — 주임선생님께 보고","PCC set 콜"],
+    med: [],
+    post: ["PCC bag 비우지 말고 bag 자체를 교체"],
+    warning: [],
+    transfer: [""],
+    important: false,
+  },
 };
 
 const DEPT_NOTES={"GS":"정규:외과사무실/비정규:수납라벨→병동","NS":"교수님어레인지 확인필요"};
-const UNIT_CONSENTS={"ICU":"중환자실입실동의서","CCU":"심혈관내과중환자실 입실동의서","Stroke":"뇌졸중집중치료실동의서"};
+const UNIT_CONSENTS={"ICU":"중환자실입실동의서","CCU":"심혈관내과중환자실 입실동의서","Stroke":"뇌졸중집중치료실동의서 (보호자 24hr 1인 상주 필수)","LICU":"간집중치료실입실동의서 (보호자 24hr 1인 상주 필수, 114병동 소속)"};
 const EXAMPLES=[{label:"간단퇴원",text:"routine w/u상 특이소견 없어서 r/o URI\nD/C, IMHO opd f/u as scheduled"},{label:"교육포함퇴원",text:"[입원결과]\n퇴원\n[향후계획]\n호흡곤란 진행, 객혈 등 있으면 ER 재내원 교육함.\n산소포화도 측정 잘 하시도록함."},{label:"컨설트답변",text:"1. 귀과적으로 출혈의 위험성 높지 않다면, LMWH 단기간 유지, 추후 감량, 중단을 추천드립니다. 이에 대해서는 추후 신경과 외래로 FU 해주십시오.\n2. Sacral insufficiency fracture에 대해서는 정형외과 협진 추천드립니다.\n3. 신경과적으로는 LMWH 투약 유지한다면 aspirin 투약을 지속할 이유는 없을 것으로 판단합니다."},{label:"GS입원+OP",text:"GS adm, NPO\nOP 내일 1st"},{label:"CCU입원",text:"CARD adm to CCU, CAG 예정\nlab/EKG 확인"},{label:"전원",text:"전원, 00병원 NS로\nCT/MRI CD 복사 필요"},{label:"ERCP입원",text:"GI adm, ERCP 시행 예정, NPO 유지\nENDO OPD f/u 1개월"}];
 
 let activeTitle = null; // 검색 모드용 타이틀 변수
@@ -439,10 +457,13 @@ if(!r.disposition){if(["전원","transfer","이송"].some(k=>t.includes(k)))r.di
 const dm={"IMR":["IMR","RESP","PULM","호흡기","호흡기내과","펄모","풀모"],"IMJ":["IMJ","RHEU","RH","류마","류마티스","류마티스내과","조인트"],"IMN":["IMN","NEPH","신장","신장내과","네프로","RENAL"],"IMHO":["IMHO","HEM","ONCO","HO","혈종","혈액종양","혈액종양내과","헴","옹코"],"IMI":["IMI","INFEC","IF","감내","감염","감염내과","인펙"],"IMG":["IMG","GI","GASTRO","소화기","소화기내과","위장관"],"IMC":["IMC","CV","CARD","CIRC","순환기","심장","심장내과","카디오"],"IME":["IME","ENDO","META","내분비","내분비내과","내분비대사","엔도"],"IMA":["IMA","ALLERGY","ALL","알레르기","알러지"],"IMHM":["IMHM","입전","입전의","입원전담","입원전담전문의"],"NP":["NP","PSY","정신","정신과","정신건강의학과","엔피"],"NR":["NR","NU","NEURO","신경과","뉴로","엔알"],"NS":["NS","N/S","NEUROSURG","신경외과","엔에스","SPINE","BRAIN"],"GS":["GS","SURG","외과","일반외과","쥐에스","HBP","UGI","LGI"],"CS":["CS","TS","THORACIC","흉부","흉부외과","흉외"],"OS":["OS","ORTHO","정형","정형외과","오에스","BONE"],"EM":["EM","ER","응급","응급의학과"],"PED":["PED","소아","소청과","페드"],"OBGY":["OBGY","산부인과","산과","부인과"],"URO":["URO","비뇨","비뇨의학과","유로"],"ENT":["ENT","OTO","이비인후과","이엔티"],"RM":["RM","REHAB","재활","재활의학과","알엠"]};
 for(const[d,ks]of Object.entries(dm))for(const k of ks)if(t.includes(k)&&!r.departments.includes(d))r.departments.push(d);
 
-// --- 특수 유닛 (SU, Stroke Unit, 뇌졸중집중치료실 대응) ---
+// --- 특수 유닛 (SU, Stroke Unit, LICU, CCU, ICU 대응) ---
 if (/Stroke|뇌졸중|\bSU\b/i.test(t)) {
     r.unit = "Stroke";
 } 
+else if (/LICU|간집중/i.test(t)) {
+    r.unit = "LICU";
+}
 else if (/CCU/i.test(t)) {
     r.unit = "CCU";
 } 
