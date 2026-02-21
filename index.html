@@ -1043,29 +1043,42 @@ function smartParse(text){
       });
     }
   } else {
-    // --- 일반 입원/퇴원 기록 추출 로직 (이 부분이 날아갔을 확률이 높습니다!) ---
-    const lines=t.split(/\n/);
-    // 짧은 영문 지시도 잘 잡히게 키워드 추가 (hydration, cst, 수액 등)
-    const instrKw=/유지|추천|권고|시행|중단|변경|감량|증량|추가|제거|시작|지속|투약|투여|처방|협진|consult|cst|의뢰|해주|바랍니다|부탁|드립니다|하십시오|고려|hydration|수액/i;
-    const skipKw=/^입원경과|^입원결과|^향후계획|^퇴원장소|^진료기록|^\s*$|adm|입원/i;
+    // --- 일반 입원/퇴원 기록 추출 로직 (수정 및 강화된 버전) ---
+    const lines = t.split(/\n/);
+    // 추출 키워드 확장 (단독 영문 및 수액 관련 키워드 강화)
+    const instrKw = /유지|추천|권고|시행|중단|변경|감량|증량|추가|제거|시작|지속|투약|투여|처방|협진|consult|cst|의뢰|해주|바랍니다|부탁|드립니다|하십시오|고려|hydration|수액|f\/u|check|관찰/i;
+    const skipKw = /^입원경과|^입원결과|^향후계획|^퇴원장소|^진료기록|^\s*$|^[=]+$/i;
       
-    for(let i=0;i<lines.length;i++){
-      const line=lines[i].trim();
-      // 짧은 단어도 잡아내도록 길이 기준 5자 -> 3자로 완화
-      if(!line||skipKw.test(line)||line.length<3)continue; 
-      const isNumbered=/^\d+[\.\)]\s*/.test(line)||/^[\*\-]\s+/.test(line);
-      if(isNumbered||instrKw.test(line)){
-        const cleaned=line.replace(/^\d+[\.\)]\s*/,'').replace(/^[\*\-]\s+/,'').trim();
-        if(cleaned.length>3){
-          let cat="지시";
-          if(/유지|지속|투약|투여|처방|시작|증량|hydration|수액/i.test(cleaned))cat="투약";
-          if(/중단|감량|제거|없을|불필요|이유는 없/i.test(cleaned))cat="투약변경";
-          if(/협진|consult|cst|의뢰/i.test(cleaned))cat="협진";
-          if(/외래|OPD|opd|f\/u|FU|follow/i.test(cleaned))cat="외래";
-          if(/검사|촬영|imaging|MRI|CT|X-ray|lab|시행/i.test(cleaned))cat="검사";
-          if(cat==="외래"||cat==="교육")continue;
-          const icons={"투약":"💊","투약변경":"⚠️","협진":"🏥","검사":"🔬","지시":"📋"};
-          r.instructions.push({id:"instr_"+i,task:cat,detail:cleaned,icon:icons[cat]||"📋",category:cat});
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      // 'adm'이나 '입원'이 포함되어도 지시사항이 있으면 추출하도록 skipKw 완화
+      if (!line || skipKw.test(line) || line.length < 2) continue; 
+      
+      const isNumbered = /^\d+[\.\)]\s*/.test(line) || /^[\*\-#]\s+/.test(line);
+      const hasAction = instrKw.test(line);
+      
+      // 번호가 매겨져 있거나, 특정 액션 키워드가 포함된 경우 추출
+      if (isNumbered || hasAction) {
+        const cleaned = line.replace(/^\d+[\.\)]\s*/, '').replace(/^[\*\-#]\s+/, '').trim();
+        if (cleaned.length >= 2) {
+          let cat = "지시";
+          if (/유지|지속|투약|투여|처방|시작|증량|hydration|수액/i.test(cleaned)) cat = "투약";
+          else if (/중단|감량|제거|없을|불필요|이유는 없/i.test(cleaned)) cat = "투약변경";
+          else if (/협진|consult|cst|의뢰/i.test(cleaned)) cat = "협진";
+          else if (/외래|OPD|opd|f\/u|FU|follow/i.test(cleaned)) cat = "외래";
+          else if (/검사|촬영|imaging|MRI|CT|X-ray|lab|시행|check/i.test(cleaned)) cat = "검사";
+          
+          // 외래와 교육은 별도 섹션에서 처리하므로 중복 방지를 위해 제외 가능 (선택 사항)
+          if (cat === "외래") continue; 
+
+          const icons = { "투약": "💊", "투약변경": "⚠️", "협진": "🏥", "검사": "🔬", "지시": "📋" };
+          r.instructions.push({ 
+            id: "instr_" + i + "_" + Math.random().toString(36).substr(2, 5), 
+            task: cat, 
+            detail: cleaned, 
+            icon: icons[cat] || "📋", 
+            category: cat 
+          });
         }
       }
     }
