@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ER Mate - 스마트 간호 도우미</title>
 <style>
+  /* === 테마 변수 === */
   :root {
     --bg: #0a0a0a; --bg2: #111; --bg3: #1a1a1a; --border: #2a2a2a; --border2: #1a1a1a;
     --text: #e0e0e0; --text2: #9a9a9a; --text3: #888; --text-dim: #666;
@@ -64,17 +65,24 @@
   .hdr-right { display: flex; align-items: center; gap: 6px; }
   .btn-new { background: var(--hdr-bg1); border: 1px solid var(--hdr-border); color: #fff; padding: 6px 14px; font-size: 12px; cursor: pointer; border-radius: 2px; display: none; touch-action: manipulation; }
   .btn-theme { background: none; border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 6px 10px; font-size: 14px; cursor: pointer; border-radius: 2px; line-height: 1; touch-action: manipulation; }
+  .btn-theme:hover { background: rgba(255,255,255,0.1); }
   .toolbar { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 4px 12px; display: flex; gap: 2px; }
   .tab { padding: 4px 14px; font-size: 11px; background: var(--tab-bg); border: 1px solid var(--tab-border); border-bottom: none; color: var(--yellow); border-radius: 3px 3px 0 0; font-weight: 700; }
   main { max-width: 700px; margin: 0 auto; padding: 8px 10px 80px; }
   .input-panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 2px; margin-bottom: 8px; }
   .input-header { background: linear-gradient(180deg, var(--panel-hdr-bg1), var(--panel-hdr-bg2)); padding: 5px 10px; font-size: 11px; font-weight: 700; color: #fff; border-bottom: 1px solid var(--panel-hdr-border); }
   .input-body { padding: 8px; }
-  textarea { width: 100%; min-height: 120px; padding: 8px; background: var(--input-bg); border: 1px solid var(--input-border); color: var(--input-text); font-family: 'Malgun Gothic', monospace; font-size: 12px; resize: vertical; outline: none; line-height: 1.7; border-radius: 1px; }
-  .btn-run { width: 100%; margin-top: 6px; padding: 14px 0; background: var(--blue); border: none; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; border-radius: 4px; }
+  textarea { width: 100%; min-height: 100px; padding: 8px; background: var(--input-bg); border: 1px solid var(--input-border); color: var(--input-text); font-family: 'Malgun Gothic', monospace; font-size: 12px; resize: vertical; outline: none; line-height: 1.7; border-radius: 1px; }
+  textarea:focus { border-color: var(--blue); }
+  textarea::placeholder { color: var(--text-dim); }
+  
+  .btn-run { width: 100%; margin-top: 6px; padding: 14px 0; background: var(--hdr-bg1); border: 1px solid var(--hdr-border); color: var(--text-dim); font-size: 14px; font-weight: 700; cursor: pointer; border-radius: 4px; -webkit-tap-highlight-color: rgba(0,0,0,0); touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+  .btn-run.active { color: #fff; background: var(--blue); border-color: var(--blue); }
+  .btn-run.active:active { opacity: 0.7; }
+  
   .examples { padding: 6px 0; display: flex; flex-wrap: wrap; gap: 4px; }
   .ex-label { font-size: 10px; color: var(--text3); margin-bottom: 4px; }
-  .btn-ex { padding: 6px 12px; background: var(--btn-ex-bg); border: 1px solid var(--btn-ex-border); color: var(--btn-ex-text); font-size: 12px; cursor: pointer; border-radius: 2px; }
+  .btn-ex { padding: 6px 12px; background: var(--btn-ex-bg); border: 1px solid var(--btn-ex-border); color: var(--btn-ex-text); font-size: 12px; cursor: pointer; border-radius: 2px; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0); }
   .result { animation: fi 0.15s ease; }
   @keyframes fi { from{opacity:0} to{opacity:1} }
   .dispo-bar { background: var(--dispo-bar-bg); border: 1px solid var(--hdr-border); border-radius: 2px; padding: 8px 10px; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -92,7 +100,7 @@
   .section-hdr.cond { color: var(--red); border-color: var(--section-cond-border); background: linear-gradient(180deg, var(--section-cond-bg1), var(--section-cond-bg2)); }
   .section-hdr.mand { color: var(--green); border-color: var(--section-mand-border); background: linear-gradient(180deg, var(--section-mand-bg1), var(--section-mand-bg2)); }
   .section-dot { width: 6px; height: 6px; border-radius: 1px; display: inline-block; }
-  .row { display: flex; align-items: flex-start; border-bottom: 1px solid var(--border2); cursor: pointer; transition: background 0.1s; }
+  .row { display: flex; align-items: flex-start; border-bottom: 1px solid var(--border2); cursor: pointer; transition: background 0.1s; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0); }
   .row:hover { background: var(--row-hover); }
   .row.done-row { opacity: 0.3; }
   .row.hl { background: var(--row-hl); }
@@ -113,10 +121,11 @@
   .modal-hdr { background: linear-gradient(180deg, var(--modal-hdr-bg1), var(--modal-hdr-bg2)); padding: 8px 12px; font-size: 13px; font-weight: 700; color: var(--yellow); border-bottom: 1px solid var(--modal-border); text-align: center; }
   .modal-body { padding: 12px; }
   .modal-item { display: flex; gap: 8px; margin-bottom: 5px; font-size: 12px; color: var(--modal-text); line-height: 1.6; }
-  .btn-modal-ok { width: 100%; margin-top: 10px; padding: 12px 0; background: linear-gradient(180deg, var(--modal-hdr-bg1), var(--modal-hdr-bg2)); border: 1px solid var(--modal-border); color: var(--yellow); font-size: 13px; font-weight: 700; cursor: pointer; border-radius: 2px; }
+  .btn-modal-ok { width: 100%; margin-top: 10px; padding: 12px 0; background: linear-gradient(180deg, var(--modal-hdr-bg1), var(--modal-hdr-bg2)); border: 1px solid var(--modal-border); color: var(--yellow); font-size: 13px; font-weight: 700; cursor: pointer; border-radius: 2px; touch-action: manipulation; }
   details { margin-top: 10px; }
   summary { font-size: 11px; color: var(--text3); cursor: pointer; padding: 4px 0; border-bottom: 1px solid var(--border2); }
-  .edit-box textarea { min-height: 80px; width: 100%; margin-top: 5px; }
+  .edit-box { margin-top: 4px; }
+  .edit-box textarea { min-height: 80px; }
   .btn-regen { width: 100%; margin-top: 4px; padding: 6px 0; background: var(--hdr-bg1); border: 1px solid var(--hdr-border); color: #fff; font-size: 11px; font-weight: 700; cursor: pointer; border-radius: 2px; }
   .hidden { display: none !important; }
 </style>
@@ -124,9 +133,10 @@
 <body>
 <header>
   <div class="hdr-left">
-    <span class="hdr-logo">EM</span>
+    <span class="hdr-logo" style="background:var(--blue);">EM</span>
     <span class="hdr-title">ER Mate</span>
-    <span class="hdr-sub">v2.1.1 | 2026.02.21</span> 
+    <!-- === 버전 === -->
+    <span class="hdr-sub">v2.1 | 2026.02.21</span> 
   </div>
   <div class="hdr-right">
     <button class="btn-theme" id="btnTheme" onclick="toggleTheme()">☀️</button>
@@ -143,12 +153,28 @@
     <div class="input-panel">
       <div class="input-header">▶ 스마트 오더 분석 / 프로토콜 검색</div>
       <div class="input-body">
-        <textarea id="inputText" placeholder="입원경과부터 퇴원장소까지 복사해 넣거나, 시술명(ERCP, CT 등)을 입력하세요."></textarea>
-        <button class="btn-run" id="btnGen" onclick="generate()">⚡ ER Mate 분석 실행</button>
+        <textarea id="inputText" 
+          placeholder="[사용법]
+1. 컨설트 복사붙여넣기 → 퇴실 체크리스트 생성
+   📋 복사범위: [입원경과] ~ [퇴원장소] 까지
+2. 시술명(ERCP, CAG 등)만 입력 → 표준 지침서 즉시 조회
+
+Enter = 실행 / Shift+Enter = 줄바꿈" 
+          oninput="updateBtn()" onpaste="setTimeout(updateBtn,50)" onchange="updateBtn()"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();generate();}"></textarea>
+        <button class="btn-run active" id="btnGen">⚡ ER Mate 분석 실행</button>
       </div>
     </div>
+    
     <div class="ex-label">빠른 실행 (예시)</div>
-    <div class="examples" id="exCon"></div>
+    <div class="examples" id="exCon">
+    </div>
+
+    <div style="margin-top:15px; padding:10px; background:var(--bg2); border:1px solid var(--border); border-radius:4px; font-size:11px; color:var(--text3);">
+      <strong>💡 Tip:</strong> 'ERCP', 'PTBD' 처럼 단어만 입력하면 시술 준비사항을 바로 알려드려요!<br>
+<strong>📖 가이드:</strong> '수혈', 'CIV', 'enema', '고칼륨', 'I/O', '간호기록' 등 업무 키워드도 검색 가능!<br>
+<strong>📋 복사범위:</strong> 진료기록조회 → <u>입원경과</u> ~ <u>퇴원장소</u>까지 드래그 복사 후 붙여넣기!
+    </div>
   </div>
 
   <div id="resultScreen" class="hidden result"></div>
@@ -167,123 +193,1184 @@
 </main>
 
 <script>
-// DB 정의부 (내용 생략 - 기존 DB와 동일)
-const MANDATORY={discharge:[{id:"m_d1",task:"퇴원약 확인",detail:"정규:응급약국 수령 / 비정규:기송관",icon:"💊"},{id:"m_d2",task:"남은약 반납",detail:"반납용지+약 → 소독물실",icon:"↩️"},{id:"m_d3",task:"Line 제거",detail:"IV line 등 제거",icon:"💉"},{id:"m_d4",task:"기록지 전달",detail:"수납 전달",icon:"📄"},{id:"m_d5",task:"침상정리",detail:"#59삐록",icon:"🧹"}],admission:[{id:"m_a1",task:"입원지시 확인",detail:"내과→EMO / 외과→직접발행",icon:"📋"},{id:"m_a2",task:"병실배정",detail:"병동전화 및 인계확인",icon:"🛏️"},{id:"m_a3",task:"약 반납 확인",detail:"남은약 반납처리",icon:"↩️"},{id:"m_a4",task:"이송등록",detail:"퇴실 전 미리등록 필수!",icon:"🚶"},{id:"m_a5",task:"침상정리",detail:"#59삐록",icon:"🧹"}],transfer:[{id:"m_t1",task:"전원동의서/소견서",detail:"주치의 확인",icon:"📝"},{id:"m_t2",task:"의무기록/CD복사",detail:"전원전담간호사",icon:"💿"},{id:"m_t3",task:"구급차안내",detail:"사설기본8만/#0896",icon:"🚑"},{id:"m_t4",task:"침상정리",detail:"#59삐록",icon:"🧹"}]};
-const PROCEDURE_DB = { "ERCP": { keywords: /ERCP/i, prep: ["NPO 유지", "동의서 확인"], med: ["항생제 확인"], post: ["Amy/Lip 확인"], warning: ["Pancreatitis 주의"], transfer: ["내시경센터(2574)"] }, "CT": { keywords: /\bCT\b/i, prep: ["20G IV 확보", "조영제 전처치"], post: ["영상 확인"], warning: ["TNI 확인"] } };
-const GUIDE_DB = { "수혈": { keywords: /수혈|blood/i, icon: "🩸", items: [{cat:"준비",txt:"동의서 확인"},{cat:"준비",txt:"ABO sample 채혈"}] } };
-const EXAMPLES=[{label:"퇴원예시",text:"입원결과\n퇴원\n향후계획\nOPD f/u 예정\n퇴원장소\n귀가"},{label:"#오더예시",text:"# hydration\n# IMHO cst\n# CFTXN 유지"}];
+const MANDATORY={discharge:[{id:"m_d1",task:"퇴원약 확인",detail:"정규:응급약국 보호자직접수령 / 비정규:기송관or보조원SMS",icon:"💊"},{id:"m_d2",task:"남은약 반납",detail:"반납용지+약→소독물실+60삐록 / 접수만된약→약국82)2592전화취소",icon:"↩️"},{id:"m_d3",task:"Line 제거",detail:"IV line 등 제거",icon:"💉"},{id:"m_d4",task:"퇴원간호기록지 전달",detail:"수납 전달",icon:"📄"},{id:"m_d5",task:"응급실퇴실간호기록",detail:"퇴실일시=간호기록'퇴원함'시간",icon:"✍️"},{id:"m_d6",task:"침상정리",detail:"#59삐록, 케이블·이름표·쓰레기정리",icon:"🧹"}],admission:[{id:"m_a1",task:"입원지시 확인",detail:"내과→EMO / 외과→진료과직접발행",icon:"📋"},{id:"m_a2",task:"병실배정",detail:"병동전화→자리+수속+인계시간확인",icon:"🛏️"},{id:"m_a3",task:"입원수속 안내",detail:"보호자에게 입원지시라벨→응급원무수납안내",icon:"🏥"},{id:"m_a4",task:"약 반납 확인",detail:"남은약 반납처리",icon:"↩️"},{id:"m_a5",task:"전과전동기록지",detail:"인계전 올려놓기",icon:"📄"},{id:"m_a6",task:"인계",detail:"검체·pen insulin등 함께인계. 수혈남으면 병동알리기",icon:"🤝"},{id:"m_a7",task:"이송등록",detail:"퇴실전 미리등록!(이름빠지면 이송못함)",icon:"🚶"},{id:"m_a8",task:"응급실퇴실간호기록",detail:"처치·검사·오더 재확인후 작성",icon:"✍️"},{id:"m_a9",task:"침상정리",detail:"#59삐록, 케이블·이름표정리",icon:"🧹"}],transfer:[{id:"m_t1",task:"전원동의서",detail:"주치의및의뢰한각과",icon:"📝"},{id:"m_t2",task:"전원소견서",detail:"이송수단·병원이름. 정규:전원전담간호사",icon:"📄"},{id:"m_t3",task:"의무기록복사",detail:"전원전담간호사",icon:"📋"},{id:"m_t4",task:"CD/DVD복사",detail:"비정규:PACS실82)3077→SMS보조원수령",icon:"💿"},{id:"m_t5",task:"전원회신확인",detail:"진료협력센터경유여부확인",icon:"📞"},{id:"m_t6",task:"구급차안내",detail:"사설기본8만원/채혈실#0896",icon:"🚑"},{id:"m_t7",task:"퇴실30분전V/S",detail:"문제시전원전담쌤알리기!",icon:"💓"},{id:"m_t8",task:"퇴원약확인",detail:"필요시퇴원약안내",icon:"💊"},{id:"m_t9",task:"외래예약확인",detail:"다음외래꼭확인!",icon:"📅"},{id:"m_t10",task:"응급실퇴실간호기록",detail:"작성&이름빼기",icon:"✍️"},{id:"m_t11",task:"침상정리",detail:"#59삐록정리",icon:"🧹"}]};
 
-let cl=[],cs={},cp=null,ci="",activeTitle=null;
+const PROCEDURE_DB = {
+  "ERCP": {
+    keywords: /ERCP|이알씨피|내시경역행담췌관조영/i,
+    prep: ["진정 내시경적 역행성 담췌관 배액술 동의서 확인", "NPO(금식) 유지", "보호자 동반 필수", "Pre-lab: CBC, PT/aPTT"],
+    med: ["예방적 항생제 확인", "첫 ERCP 시 Futhan(Nafamostat) 투약할지 확인"],
+    post: ["4hr Post-lab: Amy/Lip + Abd supine/erect 확인", "Abd pain 사정"],
+    warning: ["⚠️ Pancreatitis 발생 주의", "⚠️ Massive Hydration(Hartmann Sol) 필요 가능성"],
+    transfer: ["소화기내시경센터 (☏2574, 7266)"],
+    important: true,
+  },
+  "EGD": {
+    keywords: /\bEGD\b|위내시경|상부내시경|가스트로스코피/i,
+    prep: ["L-tube 있으면 제거", "위내시경 검사 동의서 확인", "출혈시 내시경적 지혈술(Hemostasis)/EVL 동의서 필요", "Pre-lab: CBC, PLT, PT/aPTT, ABO/Rh"],
+    med: [],
+    post: ["V/S 체크", "출혈 징후 관찰"],
+    warning: [],
+    transfer: ["소화기내시경센터 (☏2574, 7266)"],
+    important: false,
+  },
+  "CFS": {
+    keywords: /\bCFS\b|대장내시경|콜로노스코피/i,
+    prep: ["대장내시경검사 동의서", "Haprep 투여 확인", "장정결 확인: #1 전날저녁 #2 당일아침"],
+    med: [],
+    post: ["V/S 체크", "Abd pain 사정"],
+    warning: [],
+    transfer: ["소화기내시경센터 (☏2574, 7266)"],
+    important: false,
+  },
+  "SFS": {
+    keywords: /\bSFS\b|sigmoidoscopy|에스자결장내시경/i,
+    prep: ["에스자결장내시경검사 동의서", "Leclean solution 1~2회 장정결 확인"],
+    med: [],
+    post: ["V/S 체크", "Abd pain 사정"],
+    warning: [],
+    transfer: ["소화기내시경센터 (☏2574, 7266)"],
+    important: false,
+  },
+  "CT": {
+    keywords: /\bCT\b/i,
+    prep: ["20G 이상 손목 위 Pressureline IV","조영제 전처치: Avil 다 들어간 후 30min, 스테로이드는 1hr 후 촬영","전처치 시작 전 CT실 전화해서 투약 시간 확인"],
+    med: [],
+    post: ["15분 후 영상병동뷰어 확인"],
+    warning: ["CT angio+3D: TNI 확인 & HR>70 → betaloc 후 30분 f/u"],
+    transfer: ["응급CT (☏3687)"],
+    important: false,
+  },
+  "MRI": {
+    keywords: /\bMRI\b/i,
+    prep: ["20G 이상 손목 위 Pressureline IV","Sedation 시: midazolam #1 출발 시 IVS", "준비물: O2, mask/nasal, ambu, O2 line, fitting mask", "이송모니터 + 전문/인턴 동반"],
+    med: [],
+    post: ["Sedation 후 의식/호흡 확인"],
+    warning: [],
+    transfer: ["응급 MRI (☏7528)"],
+    important: false,
+  },
+  "CAG": {
+    keywords: /\bCAG\b|심도자|관상동맥조영/i,
+    prep: ["심도자술 동의서 (봉합기 포함)", "CCU vs 병동 확인 — CCU면 입실동의서 추가", "Skin prep (사타구니) → DPP → Sandbag"],
+    med: [],
+    post: [],
+    warning: [],
+    transfer: ["심혈관조영실 (☏2677)","위급상황아니면 S-CAR로 바꿔서 이송"],
+    important: false,
+  },
+  "BAE": {
+    keywords: /\bBAE\b|기관지동맥색전/i,
+    prep: ["동의서 2건: 색전술 + 봉합기", "Skin prep (사타구니) → DPP → Sandbag", "Foley 여부 확인"],
+    med: [],
+    post: ["검사 후 4~8hr ABR(절대안정)"],
+    warning: [],
+    transfer: ["본관 혈관조영실 (☏2257)"],
+    important: false,
+  },
+  "Embolization": {
+    keywords: /\bEMBO\b|출혈환자색전술|에멀/i,
+    prep: ["출혈환자 색전술 동의서", "Skin prep (사타구니) → DPP → Sandbag", "Foley 여부 확인"],
+    med: [],
+    post: ["검사 후 4~8hr ABR(절대안정)","천자부위봉합기 사용시 1~2hr ABR(절대안정)"],
+    warning: [],
+    transfer: ["본관 혈관조영실 (☏2257)"],
+    important: false,
+  },
+  "PTBD": {
+    keywords: /\bPTBD\b|경피경간담즙배액/i,
+    prep: ["경피경간담도배액술(PTBD) 동의서"],
+    med: [],
+    post: ["QOD dressing", "2주 1번 bile bag change", "검체 → culture 주치의 noti","얇은 코니칼튜브"],
+    warning: [],
+    transfer: ["본관 혈관조영실 (☏2257)"],
+    important: false,
+  },
+  "abdPCD": {
+    keywords: /abd\s*PCD|복부\s*PCD|경피적복부배액|경피적배액/i,
+    prep: ["복부경피배액술 동의서"],
+    med: [],
+    post: ["검체 btl → culture 나가는지 주치의 noti","얇은 코니칼튜브"],
+    warning: [],
+    transfer: ["본관 혈관조영실 (☏2257)"],
+    important: false,
+  },
+  "chestPCD": {
+    keywords: /chest\s*PCD|흉부\s*PCD|경피적흉부배액|pigtail/i,
+    prep: ["경피흉관삽관술 동의서","Chest bottle 걸이, 투약실에 네임라벨 붙이기","혈조 요청시 chest bottle 뜯지말고 보내기"],
+    med: [],
+    post: [],
+    warning: [],
+    transfer: ["암병원 혈관조영실 (☏7345)"],
+    important: false,
+  },
+  "PCN": {
+    keywords: /\bPCN\b|경피적신루/i,
+    prep: ["경피적신루 설치술 동의서","좌우 확인 필수"],
+    med: [],
+    post: ["4hr ABR","QOD dressing"],
+    warning: [],
+    transfer: ["암병원 혈관조영실 (☏7345)"],
+    important: false,
+  },
+  "홀터": {
+    keywords: /홀터|holter|24시간심전도/i,
+    prep: ["검사 전 얇은 런닝"],
+    med: [],
+    post: [],
+    warning: ["정규: 24시간 심전도방 예약 / 비정규: 1588-5700 전화 안내"],
+    transfer: [""],
+    important: false,
+  },
+  "EEG": {
+    keywords: /\bEEG\b|뇌파/i,
+    prep: [],
+    med: [],
+    post: [],
+    warning: ["정규: 우리가 예약 / 비정규: 1588-5700 안내"],
+    transfer: ["뇌파검사실 (☏2572, 2579)"],
+    important: false,
+  },
+  "Echo": {
+    keywords: /\becho\b|심초음파|심에코/i,
+    prep: ["TTE면 동의서 필요없음","TEE면 경식도초음파 동의서"],
+    med: [],
+    post: [],
+    warning: ["주치의가 직접 예약","인턴도가능"],
+    transfer: ["심장초음파실 (☏2578)"],
+    important: false,
+  },
+  "DJstent": {
+    keywords: /\bDJ\b|DJ stent|요관부목|요관스텐트/i,
+    prep: ["역행성 신우 조영술 동의서 + 요관 부목 설치술 동의서","NPO 4시간","IV 확보 (Gauge 상관없음)","하의 속옷 탈의","On call 진통제 pethidine 또는 fentanyl mixed clamping"],
+    med: [],
+    post: ["V/S check","2hr ABR & supine — vasovagal syncope 위험 높음","소변 배출 관찰"],
+    warning: ["DJ 교환 시: 역행성신우조영술 + 요관부목 교체술 동의서","DJ 제거 시: 요관부목 제거술 동의서만"],
+    transfer: ["대한외래 지하2층 방광경실 (☏2485)"],
+    important: false,
+  },
+  "C-line": {
+    keywords: /c-line|central line|중심정맥관|chemoport|hickman|\bPICC\b|\bIJC\b|perm cath/i,
+    prep: ["중심정맥 도관삽입술 동의서 (lumen 수 주치의 확인)","22G IV + Main fluid or KVO fluid (CIV 사용 중이면 새 IV 필요)","금식 없음 (진정 시: 고형 6~8hr, 유동식 2~3hr)","1달 이내 Lab 확인 (INR<2.0, PLT>2만)","상의 속옷 탈의","Change/revision 시 연결 수액 모두 제거"],
+    med: [],
+    post: ["V/S check","삽입부위 oozing/bleeding 관찰 (필요시 sandbag 압박)","중심정맥관 원위부 위치 주치의 확인 후 사용","채혈 가능 여부 주치의 확인"],
+    warning: ["혈관조영실 외 삽입 시 Post CPA 오더 필요","투석용 IJC: 투석/혈장교환 외 사용 금기 (응급 제외)"],
+    transfer: ["본원 혈관조영실 (☏2257)"],
+    important: false,
+  },
+  "PEG": {
+    keywords: /\bPEG\b|경피적.*위루술|위루술/i,
+    prep: ["내시경적 경피 위루술 동의서","MNNPO","18G IV + Main fluid or KVO fluid","Mouth opening 확인: 3cm 이상 (3손가락)","L-tube 있으면 제거하고 이송"],
+    med: ["Cefazolin 1g IV O.C (AST 확인 후)","Pethidine 25mg — 내시경센터에서 준비/투약"],
+    post: ["V/S check","시술 다음 날 이상 없으면 식이 시작","경관영양 처음 시작 시 NST consult","삽입부위 2주간 매일 베타딘 소독 → 이후 2일마다"],
+    warning: [],
+    transfer: ["소화기내시경센터 (☏2574, 7266)"],
+    important: false,
+  },
+  "Cardioversion": {
+    keywords: /cardioversion|카디오버전|전기적.*동율동|\bDCC\b|동율동전환/i,
+    prep: ["전기적 동율동 전환 시술 동의서","NPO 8시간","3way 2개 카테터 가까이 IV 확보"],
+    med: [],
+    post: ["V/S check","Post 12-lead ECG 촬영, EKG monitoring 유지","흉부 통증, 피부 화상 관찰"],
+    warning: ["합병증: 피부화상, 부정맥, 색전, 저산소증, Etomidate 부작용(전신tremor)"],
+    transfer: [],
+    important: false,
+  },
+  "Pacemaker": {
+    keywords: /pacemaker|페이스메이커|심박동기|\bPM\b.*삽입|\bICD\b.*삽입|\bCRT\b.*삽입|\bILR\b/i,
+    prep: ["인공심박동기 시술동의서","NPO 8시간","Cefazolin 1g AST 시행 → 시술장에 cefazolin 1g 2개 + d5w 50cc 1bag 보내기","항혈소판/항응고제 복용 시 주치의 확인","Complete AVB: 양쪽 서혜부 제모 + DPP/SMC 확인","Sandbag 1개 (Complete AVB: 2개)","보호자 동반, 환의만 (속옷 제거)"],
+    med: ["Cefa AST(+) 시: Levofloxacin 750mg 투약 + 250mg/50ml 1bag 보내기"],
+    post: ["V/S check + EKG monitoring","4hr ABR + sandbag (항응고제 환자: 6~8hr, ILR: 2hr)","PM 모드/횟수 확인 (심혈관센터 인계)","과도한 팔운동 제한"],
+    warning: ["HIS Alert → MRI 금기 장치 → Pacemaker 체크"],
+    transfer: ["3층 심혈관조영실 (☏2677)"],
+    important: false,
+  },
+  "PTGBD": {
+    keywords: /\bPTGBD\b|경피적.*담낭배액|담낭배액/i,
+    prep: ["경피경간 담낭배액술 동의서","NPO 4시간 (진정 시: 고형 6~8hr, 유동식 2~3hr)","22G IV + Main fluid","상의 속옷 탈의"],
+    med: [],
+    post: ["V/S check","통증 사정 및 조절","배액관 배액양상/배액량 관찰"],
+    warning: [],
+    transfer: ["본원 1층 혈관조영실 (☏2257)"],
+    important: false,
+  },
+  "OP": {
+    keywords: /\bOP\b|수술|응급수술|emergency op/i,
+    prep: [
+      "수술 전 Anti 투여 확인 (Antibiotics)",
+      "입원자리 확인 후 수속",
+      "수술 전 간호기록 작성",
+      "전과전동기록지 작성 (입원병동용)",
+      "Foley 삽입 여부 주치의 확인",
+      "수술동의서 확인 — 수술/마취동의서는 해당과에서 받음, ER에서는 수혈동의서까지만",
+    ],
+    med: ["수술 전 Antibiotics 투여 시간 확인"],
+    post: [],
+    warning: ["⚠️ S-car에 눕혀서 이송", "⚠️ 병동인계 후 이송보낸 시간에 이름빼기"],
+    transfer: [""],
+    important: false,
+  },
+  "Stroke": {
+    keywords: /stroke|뇌졸중|SU|Stroke Unit|\bSU\b/i,
+    prep: ["뇌졸중집중치료실 입실 동의서 확인"],
+    med: ["DAPT 투여 스케줄 확인"],
+    post: ["104W에 자리확인"],
+    warning: ["⚠️ Neurological change 발생 시 즉시 보고", "⚠️ 낙상 고위험군 관리"],
+    transfer: ["뇌졸중 집중치료실 (☏ 0309)"],
+    important: false,
+  },
+  "Tapping": {
+    keywords: /천자|tapping|\bascites tap\b|paracentesis|thoracentesis/i,
+    prep: ["천자 동의서 확인 (전문간호사/인턴 술기방)","자리 받기","BST 시행 (천자 전)","실보/냉보 몇cc 할건지 확인","Max drain 양 주치의 confirm"],
+    med: [],
+    post: ["검체 라벨링 (이름, 날짜, 시간, 부위)","4hr ABR","남은 검체 실보/냉보/폐기 주치의 확인"],
+    warning: ["T-tap 오더 시 #1 #2 #3 라벨 붙여서 나가기","drain 안 나오면 5분 대기 후 remove 요청"],
+    transfer: [""],
+    important: false,
+  },
+  "PCC": {
+    keywords: /\bPCC\b|심낭천자|pericardiocentesis/i,
+    prep: ["심낭천자술 동의서","보통 소생실에서 시행 — 주임선생님께 보고","PCC set 콜"],
+    med: [],
+    post: ["PCC bag 비우지 말고 bag 자체를 교체"],
+    warning: [],
+    transfer: [""],
+    important: false,
+  },
+};
+
+// ========== 업무 가이드 DB ==========
+const GUIDE_DB = {
+  "수혈": {
+    keywords: /수혈|transfusion|\bRBC\b|\bFFP\b|pheresis|\bPLT Tf\b|\bpRBC\b|혈액제제/i,
+    icon: "🩸",
+    items: [
+      {cat:"준비",txt:"수혈동의서 확인"},
+      {cat:"준비",txt:"구조사 call: ABO sample + 수혈 line 부탁드립니다"},
+      {cat:"준비",txt:"ABO 오더: 환자명 옆 혈액형 있으면 1개, 없으면 2개 (3일마다 채혈)"},
+      {cat:"준비",txt:"수혈 시 MF hold 여부 주치의 확인"},
+      {cat:"참고",txt:"FFP: 30분~1시간, 180ml / INR 교정 or Volume"},
+      {cat:"참고",txt:"Pheresis(PLT): 30분~1시간 / PLT 저하 시"},
+      {cat:"참고",txt:"RBC: 2~4시간, 400ml or 320ml / Hb 저하 시"},
+      {cat:"주의",txt:"⚠️ 남은 수혈 병동인계 시: ER 오더 유지 여부 확인"},
+      {cat:"주의",txt:"⚠️ 폐기/반납 시: 요청서(투약실) 주치의 사인 → NA님 전달"},
+    ]
+  },
+  "마약반납": {
+    keywords: /마약.*반납|마약반납|narcotic|마약관리/i,
+    icon: "💊",
+    items: [
+      {cat:"절차",txt:"mix 안 하고 반납: E사인 넣어서 보라색 없애기"},
+      {cat:"절차",txt:"mix 후 반납: 마약장에 넣고 X사인"},
+      {cat:"절차",txt:"마약현황조회 → 약물조회 → 반납량/사유 입력 → 반납내역 출력"},
+      {cat:"절차",txt:"'마약반납내역 출력지' + 환자약 함께 60번 NA님께 전달"},
+    ]
+  },
+  "enema": {
+    keywords: /enema|에네마|관장|kalimate|duphalac|lactulose|글리세린|glycerin|leclean/i,
+    icon: "💧",
+    items: [
+      {cat:"준비",txt:"찍찍이 기저귀(팬티형 절대 안됨) + 물티슈 미리 안내 → 기저귀 채워놓기"},
+      {cat:"Kalimate",txt:"Kalimate 5g×6포 + D5W 200ml → 15분 이상 참으라고 설명"},
+      {cat:"Duphalac",txt:"Lactulose 200ml [간성혼수용] — 50cc syringe + rectal tube + 윤활제 + 휴지"},
+      {cat:"Leclean",txt:"Leclean & Glycerin: 완제품 (비품 있음) / 수가: 글리세린 관장 or drug retention enema"},
+    ]
+  },
+  "CIV": {
+    keywords: /\bCIV\b|지속주입|continuous.*infusion|노에피|니카디핀|니트로|판토프라졸/i,
+    icon: "💉",
+    items: [
+      {cat:"처방",txt:"① NE(Norepinephrine) 4mcg/min = 15cc/hr — NE 3.2mg + D5W 196.8ml (total 200ml)"},
+      {cat:"처방",txt:"② NCD(Nicardipine) 1mg/hr = 5cc/hr — NCD 50mg + NS 200ml (total 250ml)"},
+      {cat:"처방",txt:"③ NG(Nitroglycerin) 10mcg/min = 3cc/hr — NG 20mg + D5W 80ml (total 100ml)"},
+      {cat:"처방",txt:"④ PPI(Pantoprazole/Nexium) 8mg/hr = 8cc/hr — PPI 80mg + NS 80ml (total 80ml)"},
+      {cat:"주의",txt:"⚠️ CIV 약물은 단독 line 사용 (PPI는 MF에 병용 가능)"},
+    ]
+  },
+  "고칼륨": {
+    keywords: /고칼륨|hyperkalemia|K\+.*높|칼륨.*높|potassium.*high|K교정/i,
+    icon: "⚡",
+    items: [
+      {cat:"투약",txt:"Calcium gluconate IV"},
+      {cat:"투약",txt:"D50% + Humulin R IV"},
+      {cat:"투약",txt:"30min / 1hr BST f/u"},
+      {cat:"투약",txt:"Kalimate enema 병행 가능"},
+      {cat:"참고",txt:"(KCl 15%) Potassium 40mEq/20ml + NS 500ml (over 4hr)"},
+    ]
+  },
+  "mix금기": {
+    keywords: /mix.*금기|배합금기|혼합금기|침전|같은.*라인/i,
+    icon: "🚫",
+    items: [
+      {cat:"금기",txt:"★ 같은 라인 mix 금지 — 모르는 약은 더블클릭해서 약품정보조회 확인 ★"},
+      {cat:"금기",txt:"Phosten(KH2PO4) + MgSO4 → 침전물 생김 / 투약순서: Mg → Ca → Phosten"},
+      {cat:"금기",txt:"Bivon(Bicarbonate sodium) + Calcium제제 → 크리스탈 생김"},
+      {cat:"금기",txt:"TPN + Triaxone → 칼슘함유용액 동시투여 불가 (침전위험)"},
+    ]
+  },
+  "투약속도": {
+    keywords: /투약.*속도|수액.*속도|drip.*rate|방울|cc\/hr/i,
+    icon: "⏱️",
+    items: [
+      {cat:"속도",txt:"40cc/hr = 3~4초에 1방울 = 24시간"},
+      {cat:"속도",txt:"80cc/hr = 2~3초에 1방울 = 12시간"},
+      {cat:"속도",txt:"120cc/hr = 1~2초에 1방울 = 8~9시간"},
+      {cat:"참고",txt:"[SUP] = Y사인 넣을 때마다 올라옴 / [TIT] 청구 → 투약 시 Y사인"},
+    ]
+  },
+  "TDM": {
+    keywords: /\bTDM\b|약물농도|digoxin|vanco|항경련제|면역억제제/i,
+    icon: "🔬",
+    items: [
+      {cat:"대상",txt:"Digoxin, Vancomycin, 항경련제, 면역억제제"},
+      {cat:"시점",txt:"보통 약 먹기 30min 전 채혈 (ER에서는 먹어도 나갈 때 있음)"},
+    ]
+  },
+  "ACTH": {
+    keywords: /\bACTH\b|synacthen|시낙텐|코티솔|cortisol.*test/i,
+    icon: "🧪",
+    items: [
+      {cat:"절차",txt:"ACTH 검사 오더 → 구조사 call: ACTH 검사 나가주세요"},
+      {cat:"절차",txt:"구조사가 ACTH + Cortisol(basal) 채혈"},
+      {cat:"절차",txt:"Synacthen IV shooting → 포시로 밀어주기"},
+      {cat:"절차",txt:"30min 후 Cortisol 채혈 → 60min 후 Cortisol 채혈"},
+      {cat:"참고",txt:"ACTH stimulation test 검사오더는 초기상태가 맞음 (수가 없음)"},
+    ]
+  },
+  "투석": {
+    keywords: /투석|dialysis|HD|혈액투석|\bperm cath\b|인공신장/i,
+    icon: "🫧",
+    items: [
+      {cat:"동의서",txt:"Perm cath 삽입시술 동의서 + 응급혈액투석시술동의서 (PTA 경피경혈관성형술)"},
+      {cat:"적응증",txt:"AVF malfunction이거나 없는 사람 → 응급투석"},
+      {cat:"이송",txt:"혈관조영실 → X-ray실 → 투석(인공신장실) 이송등록"},
+      {cat:"확인",txt:"투석실 전화: perm 꽂으러 가는데 XR 찍고 바로 투석 가도 되는지"},
+      {cat:"확인",txt:"Post XR confirm: 신장내과 전임의"},
+      {cat:"주의",txt:"⚠️ 투석 못하면 K+ level ▲"},
+    ]
+  },
+  "A-line": {
+    keywords: /a-line|art.*line|동맥라인|동맥관|에이라인/i,
+    icon: "📈",
+    items: [
+      {cat:"준비",txt:"수가: transducer + cannular + 나픽스 + 동맥혈압측정"},
+      {cat:"위치",txt:"A-line 카테터, 나픽스: 소생실"},
+      {cat:"위치",txt:"Pressure bag: 소생실"},
+      {cat:"위치",txt:"집게, 커넥터: 소생실"},
+    ]
+  },
+  "신환접수": {
+    keywords: /신환|신규환자|새환자|대기실.*환자|자리.*받은/i,
+    icon: "🆕",
+    items: [
+      {cat:"대기실",txt:"① 오더 screening, 처치 끊기 (예진실 IV set → IV 확보 + 수액 연결)"},
+      {cat:"대기실",txt:"② X-ray/CT/MRI 있으면 환자복 들고가기 (중자·대자 3구역 옷장)"},
+      {cat:"대기실",txt:"③ 채혈, X-ray, 금식, 보호자 상주 원칙 설명"},
+      {cat:"대기실",txt:"④ 환자 사정, V/S check"},
+      {cat:"대기실",txt:"⑤ 담당간호사 구역 안내 (안내 안하면 예진실 업무 마비)"},
+      {cat:"자리배정",txt:"① 오더 screening, 주증상, 과거력 확인 및 처치 끊기"},
+      {cat:"자리배정",txt:"② monitoring set, 환자복 준비"},
+      {cat:"자리배정",txt:"③ initial lab, CT, X-ray[p], MRI 등 call (0026/0099), 영상병동뷰어, 동의서"},
+      {cat:"자리배정",txt:"④ 환자 사정, monitor admit, V/S check"},
+      {cat:"자리배정",txt:"⑤ 금식, 보호자 상주 원칙 설명"},
+    ]
+  },
+  "간호기록": {
+    keywords: /간호기록|GCS|사지근력|pupil|NPI|의식수준/i,
+    icon: "📝",
+    items: [
+      {cat:"GCS-E",txt:"E4 자발적 눈뜸 / E3 소리에 / E2 통증에 / E1 눈뜨지 않음"},
+      {cat:"GCS-V",txt:"V5 지남력3+ / V4 지남력 하나라도- / V3 혼란 / V2 신음 / V1 발화없음 (기관절개·삽관 시 T)"},
+      {cat:"GCS-M",txt:"M6 obey / M5 통증 적극회피 / M4 소극회피 / M3 이상굴곡 / M2 이상신전 / M1 무반응"},
+      {cat:"근력",txt:"V: 정상(중력+검사자 저항) / IV: 약간 저항 / III: 들어올리나 못버팀 / II: 좌우만 / I: 움찔 / O: 없음"},
+      {cat:"Pupil",txt:"빛반사: prompt / hippus / sluggish / 없음 — NPI기계 소생실 위치, NPI≥3이면 prompt"},
+      {cat:"기록",txt:"타원 foley/PTBD/PCN/L-tube/C-line → 삽입일자, 교환주기, 드레싱일자 확인 후 기록"},
+    ]
+  },
+  "간호진단": {
+    keywords: /간호진단|nursing.*diagnosis/i,
+    icon: "📋",
+    items: [
+      {cat:"진단",txt:"출혈위험 / 출혈"},
+      {cat:"진단",txt:"비효율적 호흡 양상"},
+      {cat:"진단",txt:"조직관류 저하: 뇌, 심폐계, 신장 등"},
+      {cat:"진단",txt:"장폐색증 / 고칼륨혈증 / 저나트륨혈증"},
+      {cat:"진단",txt:"급성 통증"},
+      {cat:"진단",txt:"감염 위험 (CRP↑, 발열)"},
+      {cat:"진단",txt:"전염 위험 (Flu, Covid, TB 등)"},
+    ]
+  },
+  "드레싱주기": {
+    keywords: /드레싱|dressing|교환주기|medress|tegaderm|L-tube.*주기/i,
+    icon: "🩹",
+    items: [
+      {cat:"주기",txt:"Medress: 2일마다"},
+      {cat:"주기",txt:"Tegaderm: 1주일마다"},
+      {cat:"주기",txt:"L-tube: 4주마다"},
+      {cat:"주기",txt:"C-line: 안 쓸 경우 lumen마다 regurge/push 확인 → heparin locking"},
+    ]
+  },
+  "I/O": {
+    keywords: /\bI\/O\b|인아웃|intake.*output|소변량|urine.*output/i,
+    icon: "📊",
+    items: [
+      {cat:"시간",txt:"q6h: 06:00, 12:00, 18:00, 23:59"},
+      {cat:"시간",txt:"q8h: 08:00, 16:00, 23:59"},
+      {cat:"기록",txt:"Night 00:00에 23:59 기록과 동일하게 한번 더 기록"},
+      {cat:"기록",txt:"임상관찰기록: 전날 23:59 & 당일 00:00 fluid양 기록, 인퓨전펌프 제로잉"},
+      {cat:"범위",txt:"-500~+500 정상범위 / HF환자나 옵세 환자는 다 noti"},
+      {cat:"주의",txt:"I/O 오더 있는데 foley 없으면 → self 체크할건지 주치의 확인"},
+      {cat:"주의",txt:"F/D 환자: drip 포함해서 I/O noti / UO 적은 환자: 시간당 알려주기"},
+    ]
+  },
+  "약반납": {
+    keywords: /약.*반납|반납.*약|남은약|퇴원약.*반납/i,
+    icon: "↩️",
+    items: [
+      {cat:"반납",txt:"이미 올라온 약: '반납용지' + 약 → 소독물실 + 60번 삐록"},
+      {cat:"반납",txt:"접수만 된 약: 82)2592 or 2977 전화 → 접수취소"},
+      {cat:"주의",txt:"⚠️ 핑크색 [반납] 표시되어야 이름 뺄 수 있음!"},
+      {cat:"퇴원약",txt:"정규(10:30~17:30): 응급약국 보호자 직접 수령 안내"},
+      {cat:"퇴원약",txt:"비정규: 기송관 or 약국전화 후 보조원 SMS"},
+    ]
+  },
+  "접수취소": {
+    keywords: /접수.*취소|취소.*접수|비등록/i,
+    icon: "❌",
+    items: [
+      {cat:"절차",txt:"'응급환자비등록대장'에 환자이름 올라왔는지 확인"},
+      {cat:"절차",txt:"오더 D/C, 약·처치 다 반납 및 취소 확인"},
+      {cat:"절차",txt:"수납 call: 접수 취소해주세요"},
+    ]
+  },
+  "이송": {
+    keywords: /이송|환자.*이송|이송등록/i,
+    icon: "🚶",
+    items: [
+      {cat:"정규",txt:"환자이송 시스템 이용"},
+      {cat:"비정규",txt:"환자이송표 파일에 올려놓기"},
+      {cat:"비정규",txt:"#109 삐록: 0-0 ___가실 분 계십니다"},
+      {cat:"주의",txt:"⚠️ 퇴실 전 이송등록 미리! (이름 빠지면 이송 못함)"},
+    ]
+  },
+  "chest tube": {
+    keywords: /chest.*tube|흉관삽관|흉관/i,
+    icon: "🫁",
+    items: [
+      {cat:"준비",txt:"Chest tube set"},
+      {cat:"준비",txt:"멸균생리식염수 채워넣기 + 멸균장갑"},
+      {cat:"준비",txt:"Suction 할 경우: suction line + 거즈"},
+    ]
+  },
+  "post seizure": {
+    keywords: /seizure|발작|경련|포스트.*시져/i,
+    icon: "⚡",
+    items: [
+      {cat:"준비",txt:"Wall O2 + Face mask (reservoir+)"},
+      {cat:"준비",txt:"IV line 확보"},
+      {cat:"준비",txt:"Suction tip + Saline"},
+      {cat:"준비",txt:"장갑 + 헬멧"},
+      {cat:"투약",txt:"Keppra 2000mg loading: NS 150ml btl에 mix"},
+    ]
+  },
+  "파상풍": {
+    keywords: /파상풍|hyper-tet|boostrix|tetanus/i,
+    icon: "💉",
+    items: [
+      {cat:"확인",txt:"5년 이내 접종 이력 있으면 안 맞아도 됨 → 줄 때 물어보기"},
+      {cat:"투약",txt:"Hyper-tet: 냉장고 비품"},
+      {cat:"투약",txt:"Boostrix: 약국 call 필요 → 같이 요청"},
+      {cat:"주의",txt:"양쪽 팔에 따로 주기"},
+    ]
+  },
+  "heparin": {
+    keywords: /\bheparin\b|헤파린|heparinization/i,
+    icon: "💉",
+    items: [
+      {cat:"투약",txt:"IVS max 4000 unit"},
+      {cat:"투약",txt:"Heparinization 시 반드시 몸무게 측정"},
+      {cat:"참고",txt:"Heparin 1:100 희석 — 휴온스 heparin 1000unit/10cc (옴니셀 접수)"},
+    ]
+  },
+  "dalteparin": {
+    keywords: /dalteparin|달테파린|\bLMWH\b|저분자헤파린/i,
+    icon: "💉",
+    items: [
+      {cat:"적응증",txt:"PTE 환자"},
+      {cat:"용량",txt:">200 unit/kg/day [SC]"},
+      {cat:"확인",txt:"DPP 촉지해보기"},
+    ]
+  },
+  "terlipressin": {
+    keywords: /terlipressin|터리프레신/i,
+    icon: "💉",
+    items: [
+      {cat:"위치",txt:"냉장고에 있음"},
+      {cat:"투약",txt:"보통 2mg loading → 1mg qid, 보통 3일까지"},
+      {cat:"주의",txt:"이후 사용은 주치의 확인 필요"},
+    ]
+  },
+  "statin": {
+    keywords: /statin|lipitor|스타틴|리피토/i,
+    icon: "💊",
+    items: [
+      {cat:"적응증",txt:"NSTEMI 환자 → Lipitor(statin) + water P.O"},
+    ]
+  },
+  "steroid": {
+    keywords: /dexamethasone|덱사|스테로이드.*로딩|steroid.*loading/i,
+    icon: "💊",
+    items: [
+      {cat:"투약",txt:"Dexamethasone 10mg loading + 4mg/ml 유지"},
+      {cat:"참고",txt:"PPI 병용 가능"},
+    ]
+  },
+  "lasix": {
+    keywords: /lasix|라식스|furosemide|푸로세마이드/i,
+    icon: "💊",
+    items: [
+      {cat:"투약",txt:"투약 후 1hr effect 기록"},
+    ]
+  },
+  "Grasin": {
+    keywords: /grasin|그라신|\bG-CSF\b|\bANC\b.*낮/i,
+    icon: "💊",
+    items: [
+      {cat:"투약",txt:"Grasin 300mcg(비품) + D5W or NS 50ml 또는 SC"},
+      {cat:"투약",txt:"ANC 낮은 사람 보통 qd"},
+      {cat:"주의",txt:"⚠️ 150mcg랑 혼동주의!!"},
+    ]
+  },
+  "chemoport": {
+    keywords: /chemoport.*culture|케모포트.*배양|포트.*culture/i,
+    icon: "🧫",
+    items: [
+      {cat:"준비",txt:"Chemoport needle: 3구역 모니터링 넣는 곳에 있음"},
+      {cat:"주의",txt:"주임쌤한테 쓴다고 말하기 (주임쌤이 카운트)"},
+      {cat:"오더",txt:"Blood culture [central catheter, 혈액] — chemoport"},
+      {cat:"오더",txt:"Heparin 1:100 희석 오더 받아서 드리기"},
+    ]
+  },
+  "call업무": {
+    keywords: /call.*업무|콜업무|구조사.*업무|전문간호사.*업무|\bCPN\b.*업무/i,
+    icon: "📞",
+    items: [
+      {cat:"구조사",txt:"① initial lab, ECG, urine, B/Cx ② 6A lab ③ ABO sample ④ 추가 lab 및 IV 확보"},
+      {cat:"전문간호사",txt:"중환자 검사동반 / 동의서(마취,수술 제외) / L-tube·foley insertion / tapping needle 제거 / simple splint / 사망환자 카테터제거·suture / 심전도 / ECMO priming"},
+      {cat:"CPN",txt:"객담, 대변, tapping, 추가 urine 검체"},
+      {cat:"CPN",txt:"흉통계 initial EKG + 2hr F/U EKG / L-tube·foley insertion/irrigation"},
+    ]
+  },
+  "Night업무": {
+    keywords: /night.*job|나이트.*업무|야간.*업무|당일.*스케줄링/i,
+    icon: "🌙",
+    items: [
+      {cat:"스케줄링",txt:"당일 스케줄링: 전날과 비교하여 M/F, anti 등 약 확인"},
+      {cat:"I/O",txt:"00:00 기준 I/O 다시 시작 — 임상관찰기록에 23:59 & 00:00 기록, 인퓨전펌프 제로잉"},
+      {cat:"기록",txt:"임상관찰기록: 침상보조난간, 취침 전 배뇨 확인"},
+      {cat:"검사",txt:"BST 기기 QC"},
+      {cat:"검사",txt:"2~3A경 정규 [P]X-ray 콜(0050)"},
+      {cat:"검사",txt:"정규 lab: 6A"},
+    ]
+  },
+  "Day업무": {
+    keywords: /day.*job|데이.*업무|주간.*업무|eve.*job|이브.*업무/i,
+    icon: "☀️",
+    items: [
+      {cat:"업무",txt:"스케줄링 된 라벨 확인, 라운딩 후 정규 차팅"},
+      {cat:"업무",txt:"정규시간에 입원대기 환자 자리 확인"},
+      {cat:"업무",txt:"시술 cst 확인 후 술기방에서 동의서 받기"},
+      {cat:"주의",txt:"나이트 때는 주치의 코사인 문제로 미리 받지 않기로 함"},
+    ]
+  },
+  "NA업무": {
+    keywords: /\bNA\b.*업무|보조원|비품|기송관/i,
+    icon: "🧑‍⚕️",
+    items: [
+      {cat:"비품",txt:"비품 없는 약: 기송관 or 82)2592,2977 약국 전화 → SMS로 수령 요청"},
+      {cat:"Set",txt:"C-line, foley(bag 종류), tapping set → 자리에 준비 요청 → 파일에 라벨 붙이기"},
+      {cat:"정리",txt:"#59 삐록: 0-0 자리 정리 부탁드립니다"},
+    ]
+  },
+  "Anti투약": {
+    keywords: /\banti\b.*투약|항생제.*투약|antibiotics|anti.*culture/i,
+    icon: "💊",
+    items: [
+      {cat:"확인",txt:"Anti 투약 전 culture 나갈지 confirm (blood Cx 오더 없으면 받기)"},
+      {cat:"확인",txt:"나이트 근무 시 전날이랑 order 다르면 confirm"},
+      {cat:"OP",txt:"Oncall OP anti: ACT는 ER에서, anti는 mix clamping 또는 출발 시 start"},
+    ]
+  },
+};
+
+const DEPT_NOTES={"GS":"정규:외과사무실/비정규:수납라벨→병동","NS":"교수님어레인지 확인필요"};
+const UNIT_CONSENTS={"ICU":"중환자실입실동의서","CCU":"심혈관내과중환자실 입실동의서","Stroke":"뇌졸중집중치료실동의서 (보호자 24hr 1인 상주 필수) ☏0309","LICU":"간집중치료실입실동의서 (보호자 24hr 1인 상주 필수, 114병동) ☏2670"};
+const EXAMPLES=[{label:"간단퇴원",text:"routine w/u상 특이소견 없어서 r/o URI\nD/C, IMHO opd f/u as scheduled"},{label:"교육포함퇴원",text:"[입원결과]\n퇴원\n[향후계획]\n호흡곤란 진행, 객혈 등 있으면 ER 재내원 교육함.\n산소포화도 측정 잘 하시도록함."},{label:"컨설트답변",text:"1. 귀과적으로 출혈의 위험성 높지 않다면, LMWH 단기간 유지, 추후 감량, 중단을 추천드립니다. 이에 대해서는 추후 신경과 외래로 FU 해주십시오.\n2. Sacral insufficiency fracture에 대해서는 정형외과 협진 추천드립니다.\n3. 신경과적으로는 LMWH 투약 유지한다면 aspirin 투약을 지속할 이유는 없을 것으로 판단합니다."},{label:"GS입원+OP",text:"GS adm, NPO\nOP 내일 1st"},{label:"CCU입원",text:"CARD adm to CCU, CAG 예정\nlab/EKG 확인"},{label:"전원",text:"전원, 00병원 NS로\nCT/MRI CD 복사 필요"},{label:"ERCP입원",text:"GI adm, ERCP 시행 예정, NPO 유지\nENDO OPD f/u 1개월"}];
+
+let activeTitle = null; // 검색 모드용 타이틀 변수
 
 function smartParse(text){
-  const t=text;
-  const r={disposition:null,departments:[],unit:null,procedures:[],opdItems:[],educationItems:[],npo:false,op:false,conditionalTasks:[],instructions:[],hasTransfusion:false};
+const t=text;
+const r={disposition:null,departments:[],unit:null,procedures:[],opdItems:[],educationItems:[],npo:false,op:false,conditionalTasks:[],instructions:[],hasTransfusion:false};
 
-  // Disposition 판별
-  if(/전원|transfer/i.test(t)) r.disposition="transfer";
-  else if(/퇴원|D\/C|discharge/i.test(t)) r.disposition="discharge";
-  else if(/입원|adm/i.test(t)) r.disposition="admission";
+// --- Disposition ---
+const rsm=t.match(/입원결과[^\n]*\n([^\n]*)/);
+if(rsm){const rl=rsm[1];if(/전원|transfer/.test(rl))r.disposition="transfer";else if(/퇴원|D\/C|d\/c|discharge|귀가/.test(rl))r.disposition="discharge";else if(/입원|adm/i.test(rl))r.disposition="admission";}
+if(!r.disposition){if(["전원","transfer","이송"].some(k=>t.includes(k)))r.disposition="transfer";else if(/퇴원|D\/C|d\/c|discharge|귀가/.test(t))r.disposition="discharge";else if(/\badm\b/i.test(t))r.disposition="admission";}
 
-  // 일반 기록 추출 로직 (수정된 핵심 섹션)
-  const lines = t.split(/\n/);
-  const instrKw = /유지|추천|권고|시행|중단|변경|감량|증량|추가|제거|시작|지속|투약|투여|처방|협진|consult|cst|의뢰|해주|바랍니다|부탁|드립니다|하십시오|고려|hydration|수액|f\/u|check|관찰/i;
-  const skipKw = /^입원경과|^입원결과|^향후계획|^퇴원장소|^진료기록|^\s*$|^[=]+$/i;
+// --- 진료과 ---
+const dm={"IMR":["IMR","RESP","PULM","호흡기","호흡기내과","펄모","풀모"],"IMJ":["IMJ","RHEU","RH","류마","류마티스","류마티스내과","조인트"],"IMN":["IMN","NEPH","신장","신장내과","네프로","RENAL"],"IMHO":["IMHO","HEM","ONCO","HO","혈종","혈액종양","혈액종양내과","헴","옹코"],"IMI":["IMI","INFEC","IF","감내","감염","감염내과","인펙"],"IMG":["IMG","GI","GASTRO","소화기","소화기내과","위장관"],"IMC":["IMC","CV","CARD","CIRC","순환기","심장","심장내과","카디오"],"IME":["IME","ENDO","META","내분비","내분비내과","내분비대사","엔도"],"IMA":["IMA","ALLERGY","ALL","알레르기","알러지"],"IMHM":["IMHM","입전","입전의","입원전담","입원전담전문의"],"NP":["NP","PSY","정신","정신과","정신건강의학과","엔피"],"NR":["NR","NU","NEURO","신경과","뉴로","엔알"],"NS":["NS","N/S","NEUROSURG","신경외과","엔에스","SPINE","BRAIN"],"GS":["GS","SURG","외과","일반외과","쥐에스","HBP","UGI","LGI"],"CS":["CS","TS","THORACIC","흉부","흉부외과","흉외"],"OS":["OS","ORTHO","정형","정형외과","오에스","BONE"],"EM":["EM","ER","응급","응급의학과"],"PED":["PED","소아","소청과","페드"],"OBGY":["OBGY","산부인과","산과","부인과"],"URO":["URO","비뇨","비뇨의학과","유로"],"ENT":["ENT","OTO","이비인후과","이엔티"],"RM":["RM","REHAB","재활","재활의학과","알엠"]};
+const shortDepts=new Set(["NR","NS","GS","CS","OS","NP","EM","RM","IF","GI","CV","HO","NU","RH"]);
+for(const[d,ks]of Object.entries(dm))for(const k of ks){
+  if(k.length<=2 || shortDepts.has(k)){
+    const re=new RegExp("\\b"+k+"\\b","i");
+    if(re.test(t)&&!r.departments.includes(d))r.departments.push(d);
+  } else {
+    if(t.includes(k)&&!r.departments.includes(d))r.departments.push(d);
+  }
+}
+
+// --- 특수 유닛 (SU, Stroke Unit, LICU, CCU, ICU 대응) ---
+if (/Stroke|뇌졸중|\bSU\b/i.test(t)) {
+    r.unit = "Stroke";
+} 
+else if (/LICU|간집중/i.test(t)) {
+    r.unit = "LICU";
+}
+else if (/CCU/i.test(t)) {
+    r.unit = "CCU";
+} 
+else if (/ICU|중환자실/i.test(t)) {
+    r.unit = "ICU";
+}
+
+// --- 컨설트 포맷 판별 (시술 매칭 스킵용) ---
+const isConsultFormat = /회신|상세내용|입원치료.*필요|종합.*소견|Recommendation/i.test(t);
+
+// --- 검사/시술: PROCEDURE_DB 키워드 매칭 (컨설트 회신에서는 스킵) ---
+if(!isConsultFormat){
+const actionKw=/시행|예정|check|찍|보내|촬영|예약|의뢰|콜|call|준비|go|schedule|내일|모레|1st|2nd/i;
+const imagingActionKw=/시행|예정|찍|보내|촬영|예약|콜|call|준비|go|schedule/i;
+const imagingExclude=/결과|소견|상|판독|reading|보면|에서|finding|review/i;
+for(const[name,proc]of Object.entries(PROCEDURE_DB)){
+  const m=t.match(proc.keywords);
+  if(m){
+    const idx=t.indexOf(m[0]);
+    const nearby=t.substring(Math.max(0,idx-30),Math.min(t.length,idx+m[0].length+30));
+    if(name==="CT"||name==="MRI"){
+      if(imagingActionKw.test(nearby)&&!imagingExclude.test(nearby))r.procedures.push(name);
+    } else {
+      if(name!=="OP"&&actionKw.test(nearby))r.procedures.push(name);
+    }
+  }
+}
+}
+
+// --- OPD ---
+const opdSet=new Set();
+const opdKw=/외래|OPD|opd|f\/u|F\/U|follow[- ]?up/i;
+const opdSkipKw=/상세내용|회신내용|의뢰의|배상|선생님|입원치료|치료계획.*상의|과거력|경과.*관찰|임종실|가능하도록|회신|소견|Opinion/i;
+t.split(/\n/).forEach(line=>{
+  const l=line.trim();
+  if(!opdKw.test(l))return;
+  if(opdSkipKw.test(l))return;
+  let extracted=l.replace(/^[\*\-\d\.\)\s]+/,'').trim();
+  if(extracted.length>60){
+    const match=extracted.match(/.{0,25}(외래|OPD|f\/u|F\/U|follow[- ]?up).{0,25}/i);
+    if(match)extracted=match[0].trim();
+  }
+  if(extracted.length>3)opdSet.add(extracted);
+});
+const opdArr=[...opdSet];
+const opdFiltered=[];
+for(let i=0;i<opdArr.length;i++){
+  let skip=false;
+  for(let j=0;j<opdArr.length;j++){
+    if(i===j)continue;
+    const wi=opdArr[i].split(/\s+/),wj=opdArr[j].split(/\s+/);
+    const common=wi.filter(w=>w.length>1&&wj.includes(w));
+    if(common.length>=2&&opdArr[i].length>opdArr[j].length){skip=true;break;}
+  }
+  if(!skip)opdFiltered.push(opdArr[i]);
+}
+r.opdItems=opdFiltered;
+
+// --- 교육 ---
+const es=new Set();
+t.split(/[.\n]/).filter(l=>/교육함|교육하였|설명함|하시도록|재내원|재방문/.test(l)).forEach(l=>{const c=l.trim();if(c.length>3)es.add(c);});
+r.educationItems=[...es];
+
+// --- NPO ---
+if(/NPO|npo|금식/.test(t))r.npo=true;
+
+// --- OP ---
+const om=t.match(/(\bOP\b|수술)/gi);
+if(om)for(const m of om){const i=t.indexOf(m),nb=t.substring(Math.max(0,i-30),Math.min(t.length,i+m.length+30));if(/예정|내일|모레|1st|2nd|시행|진행|올라가/i.test(nb)&&!/아님|없|안 |불필요|불가|안함|취소|보류/i.test(nb)){r.op=true;break;}}
+
+// --- 진단서 ---
+if(/진단서|소견서/.test(t))r.conditionalTasks.push({id:"c_doc",task:"진단서/서류발급",detail:"주치의요청(2만원,부본1천원)",icon:"📑"});
+
+// --- 수혈 ---
+r.hasTransfusion=(/수혈|transfusion|RBC|FFP|pheresis|PLT Tf|plt tf/i.test(t));
+
+// --- 컨설트 회신 파싱 (과별 핵심 요약) ---
+
+if(isConsultFormat){
+  const blocks = t.split(/(?=\d+\.\s*.+?(?:회신|센터|Recommendation)\s*[\(\[])/).filter(b=>b.trim());
+  const finalBlocks = blocks.length > 0 ? blocks : [t];
+  
+  for(let bi=0; bi<finalBlocks.length; bi++){
+    const block = finalBlocks[bi];
+    if(!block.trim() || block.trim().length < 20) continue;
+    
+    // 1. 과명 찾기 (윗부분 300자 안에서 넉넉히 탐색)
+    let dept = "";
+    const headText = block.substring(0, 300);
+    const deptMatch = headText.match(/(완화의료|임상윤리|호스피스|비뇨의학과|비뇨기과|종양내과|혈액종양내과|혈액종양|신경과|신경외과|호흡기내과|소화기내과|순환기내과|심장내과|정형외과|흉부외과|재활의학과|정신건강|감염내과|신장내과|내분비내과|내분비|류마티스|알레르기|일반외과|외과|응급의학과|피부과|안과|이비인후과|산부인과)/);
+    if(deptMatch) dept = deptMatch[1];
+    if(!dept){
+      const abbr = headText.match(/\b(URO|GS|NS|NR|CS|OS|IMG|IMC|IMR|IMI|IMN|IME|IMJ|IMA|IMHO|NP|RM|PED|OBGY|ENT|EM)\b/i);
+      if(abbr) dept = abbr[1].toUpperCase();
+    }
+    if(!dept){
+      const sigMatch = block.match(/\b(URO|GS|NS|NR|CS|OS|IMG|IMC|IMR|IMI|IMN|IME|IMJ|IMA|IMHO|NP|RM|PED|OBGY|ENT|EM)\s*(?:F\.|R\d|교수|올림|배상)/i);
+      if(sigMatch) dept = sigMatch[1].toUpperCase();
+    }
+    if(!dept){
+      const korSig = block.match(/(호흡기내과|소화기내과|순환기내과|감염내과|신장내과|혈액종양내과|종양내과|신경과|신경외과|정형외과|흉부외과|외과|비뇨의학과)\s*(?:F\.|R\d|교수|올림|전임의|전공의)/i);
+      if(korSig) dept = korSig[1];
+    }
+    
+    const deptAbbrMap = {"비뇨의학과":"URO","비뇨기과":"URO","종양내과":"IMHO","혈액종양내과":"IMHO","혈액종양":"IMHO","신경과":"NR","신경외과":"NS","호흡기내과":"IMR","소화기내과":"IMG","순환기내과":"IMC","심장내과":"IMC","정형외과":"OS","흉부외과":"CS","재활의학과":"RM","정신건강":"NP","감염내과":"IMI","신장내과":"IMN","내분비내과":"IME","내분비":"IME","류마티스":"IMJ","알레르기":"IMA","일반외과":"GS","외과":"GS","완화의료":"완화의료","임상윤리":"완화의료","호스피스":"완화의료","피부과":"DERM","안과":"EYE","이비인후과":"ENT","산부인과":"OBGY"};
+    const deptCode = deptAbbrMap[dept] || dept;
+    if(!deptCode) continue;
+    
+    // 2. 입원/전원 보조 판단 (전체 텍스트 기준)
+    const admNeeded = /입원치료.*필요.*여부[\s\S]{0,30}예/i.test(block);
+    const transferRec = /타병원.*전원/i.test(block);
+    
+    if(transferRec && !r.disposition) r.disposition = "transfer";
+    if(admNeeded && !r.disposition) r.disposition = "admission";
+
+    let suffix = "";
+    if(admNeeded && transferRec) suffix = " → 타병원 전원 추천";
+    else if(admNeeded) suffix = " → 입원치료 필요";
+    else if(transferRec) suffix = " → 타병원 전원 추천";
+
+    // 3. 본문 텍스트 추출 (가비지 데이터 완벽 제거)
+    let detailText = block;
+    // 하단 EMR 시스템 텍스트 날리기
+    detailText = detailText.replace(/입원치료 필요 여부[\s\S]*/, '');
+    detailText = detailText.replace(/추적관찰 및 소요시간[\s\S]*/, '');
+    
+    // 회신내용, 상세내용 등 헤더 기준으로 쪼갠 뒤 맨 마지막 덩어리(진짜 본문)만 취득
+    const parts = detailText.split(/(?:상세내용|회신내용|Opinion|Recommendation)\s*[:\n]+/i);
+    if (parts.length > 1) {
+        detailText = parts[parts.length - 1]; 
+    }
+    
+    if(detailText.length < 5) continue;
+    
+    const safeDetail = detailText.replace(/\b([A-Za-z])\.([A-Za-z])/g, '$1\u00B7$2').replace(/\b(s\/p|r\/o|op|Lt|Rt|Pf|Dr)\./gi, '$1\u00B7');
+    
+    // 4. 문장 분리 (연결어미 기준 및 괄호 보호)
+    const formattedDetail = safeDetail.replace(/(주시고|바라며|이므로|하므로|드리오니|권고드리나|필요합니다|해당합니다|가능하며)\s*,?\s*/g, (match, p1, offset, string) => {
+        const after = string.slice(offset);
+        const closeIdx = after.indexOf(')');
+        const openIdx = after.indexOf('(');
+        if (closeIdx !== -1 && (openIdx === -1 || closeIdx < openIdx)) {
+            return match; 
+        }
+        return p1 + '\n';
+    });
+
+    const sentences = formattedDetail.split(/(?:\.\s+)|(?:\.(?=$|\n))|\n/).map(s=>s.replace(/\u00B7/g,'.').replace(/^\s*[\*\-\d\.\)]\s*/,'').trim()).filter(s=>{
+      if(s.length < 5) return false;
+      // 노이즈 텍스트 필터링 (선생님, 올림, 등등)
+      if(/선생님|안녕하십니까|배상$|감사합니다|올림\.?$|^\s*[\*\-]\s*$/.test(s)) return false;
+      if(/^\s*\d{4}-\d{2}-\d{2}/.test(s) && s.length < 15) return false;
+      if(/환자진료시각|최종작성자/.test(s)) return false; 
+      return true;
+    });
+    
+    const highPriority = [];
+    const actionSentences = [];
+    const infoSentences = [];
+    
+    sentences.forEach(s => {
+      if(/호스피스|hospice|전원|연명.*불원|서류.*작성|상담.*완료|POLST|polst|DNR|dnr|사전연명/i.test(s)){
+        highPriority.push(s);
+      }
+      else if(/입원|퇴원|치료.*계획|chemo|항암|수술|시행|투약|중단|유지|의뢰|부탁|추천|권고|필요|외래|f\/u|FU|follow|상의|고려|어려|불가|가능|완화|연명|권하지|stent|weaning|병상|기대수명|상담|saline|fluid|hydration|prophylaxis|추적|관찰|투여|확인|복용/i.test(s)){
+        actionSentences.push(s);
+      } else if(/상태|소견|결과|사유|원인|재발|악화|risk/i.test(s)){
+        infoSentences.push(s);
+      }
+    });
+    
+    const picked = [];
+    highPriority.forEach(s => { if(picked.length < 8) picked.push(s); });
+    actionSentences.forEach(s => { if(picked.length < 8 && !picked.includes(s)) picked.push(s); });
+    infoSentences.forEach(s => { if(picked.length < 8 && !picked.includes(s)) picked.push(s); });
+    
+    picked.forEach((s, idx) => {
+      let cat = "검사";
+      let icon = "🔬";
+      if(/전원|입원|퇴원|discharge|병상|전과|전동/i.test(s)){ cat="배치"; icon="🏥"; }
+      else if(/호스피스|hospice|완화|연명|권하지|권유하지|임종/i.test(s)){ cat="완화의료"; icon="🕊️"; }
+      else if(/수술.*어려|수술적 치료.*어려|불가/i.test(s)){ cat="소견"; icon="🔪"; }
+      else if(/수술|op |시술|stent|insertion|조치/i.test(s)){ cat="수술/시술"; icon="🔪"; }
+      else if(/chemo|항암/i.test(s)){ cat="항암"; icon="💊"; }
+      else if(/투약|약물|유지|중단|처방|supplement|infusion|투여|적용|CRRT|saline|fluid|복용/i.test(s)){ cat="투약"; icon="💊"; }
+      else if(/의뢰|협진|consult|부탁|의견.*확인|재협진|상의/i.test(s)){ cat="협진"; icon="🏥"; }
+      else if(/외래|OPD|f\/u|follow/i.test(s)){ cat="외래"; icon="📅"; }
+      else if(/support|care|nutritional|영양/i.test(s)){ cat="간호"; icon="💉"; }
+      else if(/기대수명|예후|예상/i.test(s)){ cat="예후"; icon="⏳"; }
+      else if(/상담|서류|가족/i.test(s)){ cat="상담"; icon="👥"; }
+      else { cat="소견"; icon="🔬"; }
       
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line || skipKw.test(line) || line.length < 2) continue; 
+      let detail = s;
+      if(idx === picked.length - 1 && suffix) detail += suffix;
+      
+      if(detail.length > 200) detail = detail.substring(0, 197) + "...";
+      
+      r.instructions.push({
+        id: "cst_"+bi+"_"+idx,
+        task: deptCode,
+        detail: detail,
+        icon: icon,
+        category: cat,
+        blockIdx: bi
+      });
+    });
+  }
+} else {
+  // --- 기존 컨설트 지시사항 추출 (비회신 포맷) ---
+  const lines=t.split(/\n/);
+  const instrKw=/유지|추천|권고|시행|중단|변경|감량|증량|추가|제거|시작|지속|투약|투여|처방|협진|consult|의뢰|해주|바랍니다|부탁|드립니다|하십시오|고려/i;
+  const skipKw=/^입원경과|^입원결과|^향후계획|^퇴원장소|^진료기록|^\s*$|adm|입원/i;
     
-    const isNumbered = /^\d+[\.\)]\s*/.test(line) || /^[\*\-#]\s+/.test(line);
-    const hasAction = instrKw.test(line);
-    
-    if (isNumbered || hasAction) {
-      const cleaned = line.replace(/^\d+[\.\)]\s*/, '').replace(/^[\*\-#]\s+/, '').trim();
-      if (cleaned.length >= 2) {
-        let cat = "지시";
-        if (/유지|지속|투약|투여|처방|시작|증량|hydration|수액/i.test(cleaned)) cat = "투약";
-        else if (/중단|감량|제거|없을|불필요/i.test(cleaned)) cat = "투약변경";
-        else if (/협진|consult|cst|의뢰/i.test(cleaned)) cat = "협진";
-        else if (/외래|OPD|f\/u/i.test(cleaned)) cat = "외래";
-        if (cat === "외래") continue; 
-
-        const icons = { "투약": "💊", "투약변경": "⚠️", "협진": "🏥", "지시": "📋" };
-        r.instructions.push({ 
-          id: "instr_" + i + "_" + Math.random().toString(36).substr(2, 5), 
-          task: cat, 
-          detail: cleaned, 
-          icon: icons[cat] || "📋", 
-          category: cat 
-        });
+  for(let i=0;i<lines.length;i++){
+    const line=lines[i].trim();
+    if(!line||skipKw.test(line)||line.length<5)continue;
+    const isNumbered=/^\d+[\.\)]\s*/.test(line)||/^[\*\-]\s+/.test(line);
+    if(isNumbered||instrKw.test(line)){
+      const cleaned=line.replace(/^\d+[\.\)]\s*/,'').replace(/^[\*\-]\s+/,'').trim();
+      if(cleaned.length>5){
+        let cat="지시";
+        if(/유지|지속|투약|투여|처방|시작|증량/i.test(cleaned))cat="투약";
+        if(/중단|감량|제거|없을|불필요|이유는 없/i.test(cleaned))cat="투약변경";
+        if(/협진|consult|의뢰/i.test(cleaned))cat="협진";
+        if(/외래|OPD|opd|f\/u|FU|follow/i.test(cleaned))cat="외래";
+        if(/검사|촬영|imaging|MRI|CT|X-ray|lab|시행/i.test(cleaned))cat="검사";
+        if(cat==="외래"||cat==="교육")continue;
+        const icons={"투약":"💊","투약변경":"⚠️","협진":"🏥","검사":"🔬","지시":"📋"};
+        r.instructions.push({id:"instr_"+i,task:cat,detail:cleaned,icon:icons[cat]||"📋",category:cat});
       }
     }
   }
-  return r;
+}
+return r;
 }
 
 function buildChecklist(p){
   const items=[];
-  p.instructions.forEach(instr => items.push({id: instr.id, task: "["+instr.task+"] "+instr.detail, detail: instr.category, icon: instr.icon, type: "conditional"}));
+  // 입원 시 과별/유닛별 참고
+  if(p.disposition==="admission"){
+    for(const d of p.departments)if(DEPT_NOTES[d])items.push({id:"dept_"+d,task:d+" 입원참고",detail:DEPT_NOTES[d],icon:"📌",type:"context",highlight:false});
+    if(p.unit&&UNIT_CONSENTS[p.unit])items.push({id:"unit_"+p.unit,task:p.unit+" 동의서",detail:UNIT_CONSENTS[p.unit],icon:"📝",type:"conditional",highlight:true});
+    if(p.npo)items.push({id:"c_npo",task:"NPO유지확인",detail:"금식상태유지",icon:"🚫",type:"conditional"});
+    if(p.op){
+      const opProc=PROCEDURE_DB["OP"];
+      if(opProc){
+        opProc.prep.forEach((txt,i)=>items.push({id:"op_prep_"+i,task:txt,detail:"[OP 준비]",icon:"📋",type:"conditional",highlight:false}));
+        opProc.med.forEach((txt,i)=>items.push({id:"op_med_"+i,task:txt,detail:"[OP 투약]",icon:"💊",type:"conditional"}));
+        opProc.warning.forEach((txt,i)=>items.push({id:"op_warn_"+i,task:txt,detail:"[OP 주의]",icon:"⚠️",type:"conditional",highlight:false}));
+      }
+    }
+  }
+  // 컨설트 지시사항 (블록별 → 과별 태그)
+  for(const instr of p.instructions){
+    items.push({
+      id: instr.id,
+      task: "["+instr.task+"] " + instr.detail,
+      detail: instr.category,
+      icon: instr.icon,
+      type:"conditional",
+      highlight: /배치|투약변경|협진|완화의료/.test(instr.category)
+    });
+  }
+  // 검사/시술
+  for(const procName of p.procedures){
+    const proc=PROCEDURE_DB[procName];
+    if(!proc)continue;
+    const pid="proc_"+procName;
+    proc.prep.forEach((txt,i)=>items.push({id:pid+"_prep_"+i,task:txt,detail:"["+procName+" 준비]",icon:"📋",type:"conditional"}));
+    if(proc.med)proc.med.forEach((txt,i)=>items.push({id:pid+"_med_"+i,task:txt,detail:"["+procName+" 투약]",icon:"💊",type:"conditional"}));
+    proc.post.forEach((txt,i)=>items.push({id:pid+"_post_"+i,task:txt,detail:"["+procName+" 사후]",icon:"🔍",type:"conditional"}));
+    proc.warning.forEach((txt,i)=>items.push({id:pid+"_warn_"+i,task:txt,detail:"["+procName+" 주의]",icon:"⚠️",type:"conditional",highlight:proc.important||false}));
+    if(proc.transfer)proc.transfer.filter(x=>x).forEach((txt,i)=>items.push({id:pid+"_trans_"+i,task:txt,detail:"["+procName+" 이송]",icon:"🚑",type:"conditional"}));
+  }
+  // OPD
+  for(const o of p.opdItems)items.push({id:"opd_"+o,task:"외래예약확인",detail:o,icon:"📅",type:"conditional",highlight:true});
+  // 교육
+  for(let i=0;i<p.educationItems.length;i++)items.push({id:"edu_"+i,task:"퇴원교육",detail:p.educationItems[i],icon:"📚",type:"conditional"});
+  // 기타 조건부
+  for(const c of p.conditionalTasks)items.push({...c,type:"conditional"});
+  // 수혈 - disposition별
+  if(p.hasTransfusion){
+    if(p.disposition==="admission")items.push({id:"c_bf",task:"수혈 병동인계",detail:"남은혈액 병동인계. MF hold 주치의확인",icon:"🩸",type:"conditional"});
+    else items.push({id:"c_bf",task:"수혈 완료확인",detail:"수혈완료 여부 확인",icon:"🩸",type:"conditional"});
+  }
+  // 필수
   (MANDATORY[p.disposition]||[]).forEach(m=>items.push({...m,type:"mandatory"}));
   return items;
+}
+
+let cl=[],cs={},cp=null,ci="";
+
+function updateBtn(){
+  const btn = document.getElementById("btnGen");
+  if(btn) btn.classList.add("active");
 }
 
 function generate(text) {
   try {
     const t = (text || document.getElementById("inputText").value).trim();
-    if (!t) return alert("내용을 입력해주세요.");
+    if (!t) {
+      alert("⚠️ 내용을 입력하거나 예시 버튼을 눌러주세요!");
+      return;
+    }
     
-    ci = t; activeTitle = null;
+    // 모드 초기화
+    activeTitle = null;
+
+    // 1단계: 검색 모드 (키워드 입력 시 체크리스트로 변환)
+   if (t.length < 20) {
+      if (/^\s*PCD\s*$/i.test(t)) {
+        showProtocol(["abdPCD","chestPCD"]);
+        return;
+      }
+      // PROCEDURE_DB 검색
+      const matched = [];
+      for (const [name, proc] of Object.entries(PROCEDURE_DB)) {
+        if (proc.keywords.test(t)) matched.push(name);
+      }
+      if (matched.length > 0) {
+        showProtocol(matched.length === 1 ? matched[0] : matched);
+        return;
+      }
+      // GUIDE_DB 검색
+      const gMatched = [];
+      for (const [name, guide] of Object.entries(GUIDE_DB)) {
+        if (guide.keywords.test(t)) gMatched.push(name);
+      }
+      if (gMatched.length > 0) {
+        showGuide(gMatched);
+        return;
+      }
+    }
+    // 2단계: 분석 모드
+    ci = t;
     cp = smartParse(t);
     cl = buildChecklist(cp);
     cs = {};
-
     document.getElementById("inputScreen").classList.add("hidden");
-    document.getElementById("resultScreen").classList.remove("hidden");
+    document.getElementById("resultScreen").classList.add("hidden");
     document.getElementById("btnReset").style.display = "block";
+    if (cp.disposition === "discharge" || cp.disposition === "transfer") {
+      document.getElementById("reminderPopup").classList.remove("hidden");
+    }
     render();
-  } catch (err) { alert("오류: " + err.message); }
+  } catch (err) {
+    alert("오류 발생: " + err.message);
+  }
 }
 
-function render(){
-  const c = document.getElementById("resultScreen");
-  const done = Object.values(cs).filter(Boolean).length;
-  const total = cl.length;
-  const pct = total ? Math.round(done / total * 100) : 0;
+// 가이드 표시 함수
+function showGuide(guideNames) {
+  if (typeof guideNames === 'string') guideNames = [guideNames];
+  cl = [];
   
-  let h = `<div class="progress-row"><div class="prog-track"><div class="prog-fill" style="width:${pct}%;background:var(--green)"></div></div><span class="prog-text">${done}/${total}</span></div>`;
-  
-  const cond = cl.filter(x => x.type === "conditional");
-  const mand = cl.filter(x => x.type === "mandatory");
+  activeTitle = { name: guideNames.join(' / '), icon: "📖" };
 
-  if(cond.length > 0){
-    h += `<div class="section-hdr cond">지시 추출</div>`;
-    cond.forEach(i => h += rItem(i));
+  guideNames.forEach(gName => {
+    const guide = GUIDE_DB[gName];
+    if (!guide) return;
+    if (guideNames.length > 1) {
+      cl.push({ id: gName+"_hdr", task: "━━ " + gName + " ━━", detail: "", icon: guide.icon||"📖", type: "manual", highlight: false });
+    }
+    let prevCat = "";
+    guide.items.forEach((item, idx) => {
+      const catChanged = item.cat !== prevCat;
+      prevCat = item.cat;
+      const isWarn = /주의|금기/.test(item.cat) || item.txt.startsWith("⚠️");
+      const icon = isWarn ? "⚠️" : (guide.icon||"📖");
+      cl.push({
+        id: `g_${gName}_${idx}`,
+        task: item.txt,
+        detail: catChanged ? "["+item.cat+"]" : "",
+        icon: icon,
+        type: "manual",
+        highlight: isWarn
+      });
+    });
+  });
+
+  cs = {};
+  document.getElementById("inputScreen").classList.add("hidden");
+  document.getElementById("resultScreen").classList.remove("hidden");
+  document.getElementById("btnReset").style.display = "block";
+  render();
+}
+
+// 타이틀을 리스트에서 빼고 별도 변수(activeTitle)로 관리
+function showProtocol(procNames) {
+  if (typeof procNames === 'string') procNames = [procNames];
+  cl = [];
+  
+  activeTitle = { name: procNames.join(' / '), icon: "📘" };
+
+  const addItems = (list, procName, prefix, tag, icon, isWarn) => {
+    list.forEach((txt, idx) => {
+      cl.push({
+        id: `${procName}_${prefix}_${idx}`,
+        task: txt,
+        detail: tag,
+        icon: icon,
+        type: "manual",
+        highlight: isWarn
+      });
+    });
+  };
+
+  procNames.forEach(procName => {
+    const proc = PROCEDURE_DB[procName];
+    if (!proc) return;
+    if (procNames.length > 1) {
+      cl.push({ id: procName+"_hdr", task: "━━ " + procName + " ━━", detail: "", icon: "📘", type: "manual", highlight: false });
+    }
+    if(proc.prep&&proc.prep.length) addItems(proc.prep, procName, "prep", "[준비]", "📋", false);
+    if(proc.med&&proc.med.length) addItems(proc.med, procName, "med", "[투약]", "💊", false);
+    if(proc.post&&proc.post.length) addItems(proc.post, procName, "post", "[사후]", "🔍", false);
+    if(proc.warning&&proc.warning.length) addItems(proc.warning, procName, "warn", "[주의]", "⚠️", true);
+    if(proc.transfer) addItems(proc.transfer.filter(x=>x), procName, "transfer", "[이송]", "🚑", false);
+  });
+
+  cs = {};
+  document.getElementById("inputScreen").classList.add("hidden");
+  document.getElementById("resultScreen").classList.remove("hidden");
+  document.getElementById("btnReset").style.display = "block";
+  render();
+}
+function render(){
+  const c=document.getElementById("resultScreen");
+  const done=Object.values(cs).filter(Boolean).length;
+  const total=cl.length;
+  const pct=total?Math.round(done/total*100):0;
+  
+  let h = "";
+  
+  // 검색 모드일 때 타이틀 헤더
+  if(activeTitle) {
+      h += `<div class="complete-bar" style="background:var(--bg2); border:1px solid var(--blue); text-align:left; padding:12px; margin-bottom:10px; display:flex; align-items:center; gap:10px;">
+        <span style="font-size:20px;">${activeTitle.icon}</span>
+        <div>
+            <div style="font-size:15px; font-weight:700; color:var(--blue);">${activeTitle.name} ${activeTitle.icon==="📖"?"업무 가이드":"표준 지침"}</div>
+            <div style="font-size:11px; color:var(--text2);">${activeTitle.icon==="📖"?"ER 업무 참고사항":"시술 전후 간호 확인"}</div>
+        </div>
+      </div>`;
+  } else if (cp && cp.disposition) {
+      // 분석 모드: disposition bar + summary
+      const di={admission:{l:"입원",c:"var(--blue)",bc:"var(--hdr-border)",e:"🏥"},discharge:{l:"퇴원",c:"var(--green)",bc:"var(--section-mand-border)",e:"🏠"},transfer:{l:"전원",c:"var(--orange)",bc:"var(--warn-border)",e:"🚑"}};
+      const d=di[cp.disposition];
+      if(d){
+         const tags=cp.departments.map(dp=>`<span class="dispo-tag" style="color:${d.c};border-color:${d.c}">${dp}</span>`).join(' ');
+         const utag=cp.unit?`<span class="dispo-tag" style="color:var(--yellow);border-color:var(--yellow)">${cp.unit}</span>`:'';
+         const sum=[cp.instructions.length>0&&"지시"+cp.instructions.length+"건",cp.procedures.length>0&&"시술"+cp.procedures.length+"건",cp.opdItems.length>0&&"외래"+cp.opdItems.length+"건",cp.educationItems.length>0&&"교육"+cp.educationItems.length+"건",cp.npo&&"NPO",cp.op&&cp.disposition==="admission"&&"OP예정"].filter(Boolean).join(" · ")||"추가항목없음";
+         h+=`<div class="dispo-bar" style="border-color:${d.bc}"><span class="dispo-emoji">${d.e}</span><span class="dispo-type" style="color:${d.c}">${d.l}</span>${tags}${utag}<span class="dispo-info">${sum}</span></div>`;
+      }
+  } else if(cp && !cp.disposition) {
+      h+='<div class="warn-bar">⚠️ Disposition 판별 불가 — 입원/퇴원/전원 키워드를 찾지 못했습니다</div>';
   }
-  if(mand.length > 0){
-    h += `<div class="section-hdr mand">필수 항목</div>`;
-    mand.forEach(i => h += rItem(i));
+
+  h += `<div class="progress-row"><span class="prog-label">진행</span><div class="prog-track"><div class="prog-fill" style="width:${pct}%;background:${pct===100?'var(--green)':'var(--red)'}"></div></div><span class="prog-text" style="color:${pct===100?'var(--green)':'var(--red)'};">${done}/${total}</span></div>`;
+  
+  // 검색 모드: 섹션 구분 없이 바로 표시
+  if(activeTitle){
+    cl.forEach(i=>{h+=rItem(i);});
+  } else {
+    // 분석 모드: 지시에서 추출 / 필수 항목 구분
+    const cond=cl.filter(x=>x.type==="conditional"||x.type==="context");
+    const mand=cl.filter(x=>x.type==="mandatory");
+    if(cond.length>0){
+      h+=`<div class="section-hdr cond"><span class="section-dot" style="background:var(--red)"></span>지시에서 추출</div>`;
+      cond.forEach(i=>{h+=rItem(i);});
+    }
+    if(mand.length>0){
+      h+=`<div class="section-hdr mand" style="margin-top:6px"><span class="section-dot" style="background:var(--green)"></span>필수 항목</div>`;
+      mand.forEach(i=>{h+=rItem(i);});
+    }
   }
-  c.innerHTML = h;
+  
+  if(pct===100)h+=`<div class="complete-bar"><div style="font-size:24px;margin-bottom:4px">✅</div><div style="font-size:13px;font-weight:700;color:var(--green)">전체 완료</div></div>`;
+  
+  // 분석 모드일 때만 원문 보기
+  if(!activeTitle && ci) {
+      h+=`<details><summary>▶ 원문보기/수정</summary><div class="edit-box"><textarea oninput="ci=this.value">${esc(ci)}</textarea><button class="btn-regen" onclick="regen()">▶ 다시생성</button></div></details>`;
+  }
+  
+  c.innerHTML=h;
+  c.classList.remove("hidden");
 }
 
 function rItem(item){
-  const d=cs[item.id];
-  const ck=d?'<div class="cb checked">V</div>':'<div class="cb"></div>';
-  return `<div class="row ${d?'done-row':''}" onclick="tog('${item.id}')"><div class="row-check">${ck}</div><div class="row-icon">${item.icon}</div><div class="row-content"><div class="row-task">${item.task}</div></div></div>`;
+  const d=cs[item.id],hl=item.highlight&&!d;
+  const rc=d?"row done-row":(hl?"row hl":"row");
+  const ck=d?'<div class="cb checked"><svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="var(--svg-check)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>':'<div class="cb"></div>';
+  const tc=d?"row-task done":"row-task";
+  const dc=d?"row-detail done":"row-detail";
+  return `<div class="${rc}" onclick="tog('${item.id}')"><div class="row-check">${ck}</div><div class="row-icon">${item.icon}</div><div class="row-content"><div class="${tc}">${esc(item.task)}</div>${item.detail?`<div class="${dc}">${esc(item.detail)}</div>`:''}</div></div>`;
 }
 
-function tog(id){ cs[id]=!cs[id]; render(); }
-function resetAll(){ location.reload(); }
-function toggleTheme(){ document.body.classList.toggle('light'); }
-function closeReminder(){ document.getElementById("reminderPopup").classList.add("hidden"); }
+function tog(id){cs[id]=!cs[id];render();}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function closeReminder(){document.getElementById("reminderPopup").classList.add("hidden");}
+function resetAll(){location.reload();}
+function toggleTheme(){
+   document.body.classList.toggle('light');
+   localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');}
+function regen(){ const ta=document.querySelector("#resultScreen textarea"); if(ta){ci=ta.value; generate(ci);} }
 
-window.onload = () => {
-  const ec=document.getElementById("exCon");
-  EXAMPLES.forEach(ex=>{
-    const b=document.createElement("button"); b.className="btn-ex"; b.textContent=ex.label;
-    b.onclick=()=>{document.getElementById("inputText").value=ex.text; generate();};
-    ec.appendChild(b);
-  });
+window.onload = function() {
+    if(localStorage.getItem('theme')==='light') document.body.classList.add('light');
+    updateBtn();
+
+    // 분석 실행 버튼
+    const btnGen = document.getElementById("btnGen");
+    if(btnGen){
+      btnGen.addEventListener('touchend', function(e){
+        e.preventDefault();
+        document.getElementById('inputText').blur();
+        generate();
+      });
+      btnGen.addEventListener('click', function(e){
+        generate();
+      });
+    }
+
+    // 예시 버튼
+    const ec=document.getElementById("exCon");
+    if(ec) {
+        EXAMPLES.forEach(ex=>{
+          const b=document.createElement("button");
+          b.className="btn-ex";
+          b.textContent=ex.label;
+          b.addEventListener('touchend', function(e){ e.preventDefault(); document.getElementById("inputText").value=ex.text; generate(ex.text); });
+          b.addEventListener('click', function(){ document.getElementById("inputText").value=ex.text; generate(ex.text); });
+          ec.appendChild(b);
+        });
+    }
 };
 </script>
 </body>
