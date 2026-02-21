@@ -810,269 +810,262 @@ const EXAMPLES=[{label:"간단퇴원",text:"routine w/u상 특이소견 없어�
 let activeTitle = null; // 검색 모드용 타이틀 변수
 
 function smartParse(text){
-const t=text;
-const r={disposition:null,departments:[],unit:null,procedures:[],opdItems:[],educationItems:[],npo:false,op:false,conditionalTasks:[],instructions:[],hasTransfusion:false};
+  const t=text;
+  const r={disposition:null,departments:[],unit:null,procedures:[],opdItems:[],educationItems:[],npo:false,op:false,conditionalTasks:[],instructions:[],hasTransfusion:false};
 
-// --- Disposition ---
-const rsm=t.match(/입원결과[^\n]*\n([^\n]*)/);
-if(rsm){const rl=rsm[1];if(/전원|transfer/.test(rl))r.disposition="transfer";else if(/퇴원|D\/C|d\/c|discharge|귀가/.test(rl))r.disposition="discharge";else if(/입원|adm/i.test(rl))r.disposition="admission";}
-if(!r.disposition){if(["전원","transfer","이송"].some(k=>t.includes(k)))r.disposition="transfer";else if(/퇴원|D\/C|d\/c|discharge|귀가/.test(t))r.disposition="discharge";else if(/\badm\b/i.test(t))r.disposition="admission";}
-
-// --- 진료과 ---
-const dm={"IMR":["IMR","RESP","PULM","호흡기","호흡기내과","펄모","풀모"],"IMJ":["IMJ","RHEU","RH","류마","류마티스","류마티스내과","조인트"],"IMN":["IMN","NEPH","신장","신장내과","네프로","RENAL"],"IMHO":["IMHO","HEM","ONCO","HO","혈종","혈액종양","혈액종양내과","헴","옹코"],"IMI":["IMI","INFEC","IF","감내","감염","감염내과","인펙"],"IMG":["IMG","GI","GASTRO","소화기","소화기내과","위장관"],"IMC":["IMC","CV","CARD","CIRC","순환기","심장","심장내과","카디오"],"IME":["IME","ENDO","META","내분비","내분비내과","내분비대사","엔도"],"IMA":["IMA","ALLERGY","ALL","알레르기","알러지"],"IMHM":["IMHM","입전","입전의","입원전담","입원전담전문의"],"NP":["NP","PSY","정신","정신과","정신건강의학과","엔피"],"NR":["NR","NU","NEURO","신경과","뉴로","엔알"],"NS":["NS","N/S","NEUROSURG","신경외과","엔에스","SPINE","BRAIN"],"GS":["GS","SURG","외과","일반외과","쥐에스","HBP","UGI","LGI"],"CS":["CS","TS","THORACIC","흉부","흉부외과","흉외"],"OS":["OS","ORTHO","정형","정형외과","오에스","BONE"],"EM":["EM","ER","응급","응급의학과"],"PED":["PED","소아","소청과","페드"],"OBGY":["OBGY","산부인과","산과","부인과"],"URO":["URO","비뇨","비뇨의학과","유로"],"ENT":["ENT","OTO","이비인후과","이엔티"],"RM":["RM","REHAB","재활","재활의학과","알엠"]};
-const shortDepts=new Set(["NR","NS","GS","CS","OS","NP","EM","RM","IF","GI","CV","HO","NU","RH"]);
-for(const[d,ks]of Object.entries(dm))for(const k of ks){
-  if(k.length<=2 || shortDepts.has(k)){
-    const re=new RegExp("\\b"+k+"\\b","i");
-    if(re.test(t)&&!r.departments.includes(d))r.departments.push(d);
-  } else {
-    if(t.includes(k)&&!r.departments.includes(d))r.departments.push(d);
+  // --- Disposition (퇴원/전원 판별) ---
+  const rsm=t.match(/입원결과[^\n]*\n([^\n]*)/);
+  if(rsm){
+    const rl=rsm[1];
+    if(/전원|transfer/.test(rl))r.disposition="transfer";
+    else if(/퇴원|D\/C|d\/c|discharge|귀가/.test(rl))r.disposition="discharge";
+    else if(/입원|adm/i.test(rl))r.disposition="admission";
   }
-}
+  if(!r.disposition){
+    if(["전원","transfer","이송"].some(k=>t.includes(k)))r.disposition="transfer";
+    else if(/퇴원|D\/C|d\/c|discharge|귀가/.test(t))r.disposition="discharge";
+    else if(/\badm\b/i.test(t))r.disposition="admission";
+  }
 
-// --- 특수 유닛 (SU, Stroke Unit, LICU, CCU, ICU 대응) ---
-if (/Stroke|뇌졸중|\bSU\b/i.test(t)) {
-    r.unit = "Stroke";
-} 
-else if (/LICU|간집중/i.test(t)) {
-    r.unit = "LICU";
-}
-else if (/CCU/i.test(t)) {
-    r.unit = "CCU";
-} 
-else if (/ICU|중환자실/i.test(t)) {
-    r.unit = "ICU";
-}
-
-// --- 컨설트 포맷 판별 (시술 매칭 스킵용) ---
-const isConsultFormat = /회신|상세내용|입원치료.*필요|종합.*소견|Recommendation/i.test(t);
-
-// --- 검사/시술: PROCEDURE_DB 키워드 매칭 (컨설트 회신에서는 스킵) ---
-if(!isConsultFormat){
-const actionKw=/시행|예정|check|찍|보내|촬영|예약|의뢰|콜|call|준비|go|schedule|내일|모레|1st|2nd/i;
-const imagingActionKw=/시행|예정|찍|보내|촬영|예약|콜|call|준비|go|schedule/i;
-const imagingExclude=/결과|소견|상|판독|reading|보면|에서|finding|review/i;
-for(const[name,proc]of Object.entries(PROCEDURE_DB)){
-  const m=t.match(proc.keywords);
-  if(m){
-    const idx=t.indexOf(m[0]);
-    const nearby=t.substring(Math.max(0,idx-30),Math.min(t.length,idx+m[0].length+30));
-    if(name==="CT"||name==="MRI"){
-      if(imagingActionKw.test(nearby)&&!imagingExclude.test(nearby))r.procedures.push(name);
+  // --- 진료과 ---
+  const dm={"IMR":["IMR","RESP","PULM","호흡기","호흡기내과","펄모","풀모"],"IMJ":["IMJ","RHEU","RH","류마","류마티스","류마티스내과","조인트"],"IMN":["IMN","NEPH","신장","신장내과","네프로","RENAL"],"IMHO":["IMHO","HEM","ONCO","HO","혈종","혈액종양","혈액종양내과","헴","옹코"],"IMI":["IMI","INFEC","IF","감내","감염","감염내과","인펙"],"IMG":["IMG","GI","GASTRO","소화기","소화기내과","위장관"],"IMC":["IMC","CV","CARD","CIRC","순환기","심장","심장내과","카디오"],"IME":["IME","ENDO","META","내분비","내분비내과","내분비대사","엔도"],"IMA":["IMA","ALLERGY","ALL","알레르기","알러지"],"IMHM":["IMHM","입전","입전의","입원전담","입원전담전문의"],"NP":["NP","PSY","정신","정신과","정신건강의학과","엔피"],"NR":["NR","NU","NEURO","신경과","뉴로","엔알"],"NS":["NS","N/S","NEUROSURG","신경외과","엔에스","SPINE","BRAIN"],"GS":["GS","SURG","외과","일반외과","쥐에스","HBP","UGI","LGI"],"CS":["CS","TS","THORACIC","흉부","흉부외과","흉외"],"OS":["OS","ORTHO","정형","정형외과","오에스","BONE"],"EM":["EM","ER","응급","응급의학과"],"PED":["PED","소아","소청과","페드"],"OBGY":["OBGY","산부인과","산과","부인과"],"URO":["URO","비뇨","비뇨의학과","유로"],"ENT":["ENT","OTO","이비인후과","이엔티"],"RM":["RM","REHAB","재활","재활의학과","알엠"]};
+  const shortDepts=new Set(["NR","NS","GS","CS","OS","NP","EM","RM","IF","GI","CV","HO","NU","RH"]);
+  for(const[d,ks]of Object.entries(dm))for(const k of ks){
+    if(k.length<=2 || shortDepts.has(k)){
+      const re=new RegExp("\\b"+k+"\\b","i");
+      if(re.test(t)&&!r.departments.includes(d))r.departments.push(d);
     } else {
-      if(name!=="OP"&&actionKw.test(nearby))r.procedures.push(name);
+      if(t.includes(k)&&!r.departments.includes(d))r.departments.push(d);
     }
   }
-}
-}
 
-// --- OPD ---
-const opdSet=new Set();
-const opdKw=/외래|OPD|opd|f\/u|F\/U|follow[- ]?up/i;
-const opdSkipKw=/상세내용|회신내용|의뢰의|배상|선생님|입원치료|치료계획.*상의|과거력|경과.*관찰|임종실|가능하도록|회신|소견|Opinion/i;
-t.split(/\n/).forEach(line=>{
-  const l=line.trim();
-  if(!opdKw.test(l))return;
-  if(opdSkipKw.test(l))return;
-  let extracted=l.replace(/^[\*\-\d\.\)\s]+/,'').trim();
-  if(extracted.length>60){
-    const match=extracted.match(/.{0,25}(외래|OPD|f\/u|F\/U|follow[- ]?up).{0,25}/i);
-    if(match)extracted=match[0].trim();
-  }
-  if(extracted.length>3)opdSet.add(extracted);
-});
-const opdArr=[...opdSet];
-const opdFiltered=[];
-for(let i=0;i<opdArr.length;i++){
-  let skip=false;
-  for(let j=0;j<opdArr.length;j++){
-    if(i===j)continue;
-    const wi=opdArr[i].split(/\s+/),wj=opdArr[j].split(/\s+/);
-    const common=wi.filter(w=>w.length>1&&wj.includes(w));
-    if(common.length>=2&&opdArr[i].length>opdArr[j].length){skip=true;break;}
-  }
-  if(!skip)opdFiltered.push(opdArr[i]);
-}
-r.opdItems=opdFiltered;
+  // --- 특수 유닛 (SU, Stroke Unit, LICU, CCU, ICU 대응) ---
+  if (/Stroke|뇌졸중|\bSU\b/i.test(t)) { r.unit = "Stroke"; } 
+  else if (/LICU|간집중/i.test(t)) { r.unit = "LICU"; }
+  else if (/CCU/i.test(t)) { r.unit = "CCU"; } 
+  else if (/ICU|중환자실/i.test(t)) { r.unit = "ICU"; }
 
-// --- 교육 ---
-const es=new Set();
-t.split(/[.\n]/).filter(l=>/교육함|교육하였|설명함|하시도록|재내원|재방문/.test(l)).forEach(l=>{const c=l.trim();if(c.length>3)es.add(c);});
-r.educationItems=[...es];
+  // --- 컨설트 포맷 판별 ---
+  const isConsultFormat = /회신|상세내용|입원치료.*필요|종합.*소견|Recommendation/i.test(t);
 
-// --- NPO ---
-if(/NPO|npo|금식/.test(t))r.npo=true;
-
-// --- OP ---
-const om=t.match(/(\bOP\b|수술)/gi);
-if(om)for(const m of om){const i=t.indexOf(m),nb=t.substring(Math.max(0,i-30),Math.min(t.length,i+m.length+30));if(/예정|내일|모레|1st|2nd|시행|진행|올라가/i.test(nb)&&!/아님|없|안 |불필요|불가|안함|취소|보류/i.test(nb)){r.op=true;break;}}
-
-// --- 진단서 ---
-if(/진단서|소견서/.test(t))r.conditionalTasks.push({id:"c_doc",task:"진단서/서류발급",detail:"주치의요청(2만원,부본1천원)",icon:"📑"});
-
-// --- 수혈 ---
-r.hasTransfusion=(/수혈|transfusion|RBC|FFP|pheresis|PLT Tf|plt tf/i.test(t));
-
-// --- 컨설트 회신 파싱 (과별 핵심 요약) ---
-
-if(isConsultFormat){
-  const blocks = t.split(/(?=\d+\.\s*.+?(?:회신|센터|Recommendation)\s*[\(\[])/).filter(b=>b.trim());
-  const finalBlocks = blocks.length > 0 ? blocks : [t];
-  
-  for(let bi=0; bi<finalBlocks.length; bi++){
-    const block = finalBlocks[bi];
-    if(!block.trim() || block.trim().length < 20) continue;
-    
-    // 1. 과명 찾기 (윗부분 300자 안에서 넉넉히 탐색)
-    let dept = "";
-    const headText = block.substring(0, 300);
-    const deptMatch = headText.match(/(완화의료|임상윤리|호스피스|비뇨의학과|비뇨기과|종양내과|혈액종양내과|혈액종양|신경과|신경외과|호흡기내과|소화기내과|순환기내과|심장내과|정형외과|흉부외과|재활의학과|정신건강|감염내과|신장내과|내분비내과|내분비|류마티스|알레르기|일반외과|외과|응급의학과|피부과|안과|이비인후과|산부인과)/);
-    if(deptMatch) dept = deptMatch[1];
-    if(!dept){
-      const abbr = headText.match(/\b(URO|GS|NS|NR|CS|OS|IMG|IMC|IMR|IMI|IMN|IME|IMJ|IMA|IMHO|NP|RM|PED|OBGY|ENT|EM)\b/i);
-      if(abbr) dept = abbr[1].toUpperCase();
-    }
-    if(!dept){
-      const sigMatch = block.match(/\b(URO|GS|NS|NR|CS|OS|IMG|IMC|IMR|IMI|IMN|IME|IMJ|IMA|IMHO|NP|RM|PED|OBGY|ENT|EM)\s*(?:F\.|R\d|교수|올림|배상)/i);
-      if(sigMatch) dept = sigMatch[1].toUpperCase();
-    }
-    if(!dept){
-      const korSig = block.match(/(호흡기내과|소화기내과|순환기내과|감염내과|신장내과|혈액종양내과|종양내과|신경과|신경외과|정형외과|흉부외과|외과|비뇨의학과)\s*(?:F\.|R\d|교수|올림|전임의|전공의)/i);
-      if(korSig) dept = korSig[1];
-    }
-    
-    const deptAbbrMap = {"비뇨의학과":"URO","비뇨기과":"URO","종양내과":"IMHO","혈액종양내과":"IMHO","혈액종양":"IMHO","신경과":"NR","신경외과":"NS","호흡기내과":"IMR","소화기내과":"IMG","순환기내과":"IMC","심장내과":"IMC","정형외과":"OS","흉부외과":"CS","재활의학과":"RM","정신건강":"NP","감염내과":"IMI","신장내과":"IMN","내분비내과":"IME","내분비":"IME","류마티스":"IMJ","알레르기":"IMA","일반외과":"GS","외과":"GS","완화의료":"완화의료","임상윤리":"완화의료","호스피스":"완화의료","피부과":"DERM","안과":"EYE","이비인후과":"ENT","산부인과":"OBGY"};
-    const deptCode = deptAbbrMap[dept] || dept;
-    if(!deptCode) continue;
-    
-    // 2. 입원/전원 보조 판단 (전체 텍스트 기준)
-    const admNeeded = /입원치료.*필요.*여부[\s\S]{0,30}예/i.test(block);
-    const transferRec = /타병원.*전원/i.test(block);
-    
-    if(transferRec && !r.disposition) r.disposition = "transfer";
-    if(admNeeded && !r.disposition) r.disposition = "admission";
-
-    let suffix = "";
-    if(admNeeded && transferRec) suffix = " → 타병원 전원 추천";
-    else if(admNeeded) suffix = " → 입원치료 필요";
-    else if(transferRec) suffix = " → 타병원 전원 추천";
-
-    // 3. 본문 텍스트 추출 (가비지 데이터 완벽 제거)
-    let detailText = block;
-    // 하단 EMR 시스템 텍스트 날리기
-    detailText = detailText.replace(/입원치료 필요 여부[\s\S]*/, '');
-    detailText = detailText.replace(/추적관찰 및 소요시간[\s\S]*/, '');
-    
-    // 회신내용, 상세내용 등 헤더 기준으로 쪼갠 뒤 맨 마지막 덩어리(진짜 본문)만 취득
-    const parts = detailText.split(/(?:상세내용|회신내용|Opinion|Recommendation)\s*[:\n]+/i);
-    if (parts.length > 1) {
-        detailText = parts[parts.length - 1]; 
-    }
-    
-    if(detailText.length < 5) continue;
-    
-    const safeDetail = detailText.replace(/\b([A-Za-z])\.([A-Za-z])/g, '$1\u00B7$2').replace(/\b(s\/p|r\/o|op|Lt|Rt|Pf|Dr)\./gi, '$1\u00B7');
-    
-    // 4. 문장 분리 (연결어미 기준 및 괄호 보호)
-    const formattedDetail = safeDetail.replace(/(주시고|바라며|이므로|하므로|드리오니|권고드리나|필요합니다|해당합니다|가능하며)\s*,?\s*/g, (match, p1, offset, string) => {
-        const after = string.slice(offset);
-        const closeIdx = after.indexOf(')');
-        const openIdx = after.indexOf('(');
-        if (closeIdx !== -1 && (openIdx === -1 || closeIdx < openIdx)) {
-            return match; 
+  // --- 검사/시술 ---
+  if(!isConsultFormat){
+    const actionKw=/시행|예정|check|찍|보내|촬영|예약|의뢰|콜|call|준비|go|schedule|내일|모레|1st|2nd/i;
+    const imagingActionKw=/시행|예정|찍|보내|촬영|예약|콜|call|준비|go|schedule/i;
+    const imagingExclude=/결과|소견|상|판독|reading|보면|에서|finding|review/i;
+    for(const[name,proc]of Object.entries(PROCEDURE_DB)){
+      const m=t.match(proc.keywords);
+      if(m){
+        const idx=t.indexOf(m[0]);
+        const nearby=t.substring(Math.max(0,idx-30),Math.min(t.length,idx+m[0].length+30));
+        if(name==="CT"||name==="MRI"){
+          if(imagingActionKw.test(nearby)&&!imagingExclude.test(nearby))r.procedures.push(name);
+        } else {
+          if(name!=="OP"&&actionKw.test(nearby))r.procedures.push(name);
         }
-        return p1 + '\n';
-    });
-
-    const sentences = formattedDetail.split(/(?:\.\s+)|(?:\.(?=$|\n))|\n/).map(s=>s.replace(/\u00B7/g,'.').replace(/^\s*[\*\-\d\.\)]\s*/,'').trim()).filter(s=>{
-      if(s.length < 5) return false;
-      // 노이즈 텍스트 필터링 (선생님, 올림, 등등)
-      if(/선생님|안녕하십니까|배상$|감사합니다|올림\.?$|^\s*[\*\-]\s*$/.test(s)) return false;
-      if(/^\s*\d{4}-\d{2}-\d{2}/.test(s) && s.length < 15) return false;
-      if(/환자진료시각|최종작성자/.test(s)) return false; 
-      return true;
-    });
-    
-    const highPriority = [];
-    const actionSentences = [];
-    const infoSentences = [];
-    
-    sentences.forEach(s => {
-      if(/호스피스|hospice|전원|연명.*불원|서류.*작성|상담.*완료|POLST|polst|DNR|dnr|사전연명/i.test(s)){
-        highPriority.push(s);
-      }
-      else if(/입원|퇴원|치료.*계획|chemo|항암|수술|시행|투약|중단|유지|의뢰|부탁|추천|권고|필요|외래|f\/u|FU|follow|상의|고려|어려|불가|가능|완화|연명|권하지|stent|weaning|병상|기대수명|상담|saline|fluid|hydration|prophylaxis|추적|관찰|투여|확인|복용/i.test(s)){
-        actionSentences.push(s);
-      } else if(/상태|소견|결과|사유|원인|재발|악화|risk/i.test(s)){
-        infoSentences.push(s);
-      }
-    });
-    
-    const picked = [];
-    highPriority.forEach(s => { if(picked.length < 8) picked.push(s); });
-    actionSentences.forEach(s => { if(picked.length < 8 && !picked.includes(s)) picked.push(s); });
-    infoSentences.forEach(s => { if(picked.length < 8 && !picked.includes(s)) picked.push(s); });
-    
-    picked.forEach((s, idx) => {
-      let cat = "검사";
-      let icon = "🔬";
-      if(/전원|입원|퇴원|discharge|병상|전과|전동/i.test(s)){ cat="배치"; icon="🏥"; }
-      else if(/호스피스|hospice|완화|연명|권하지|권유하지|임종/i.test(s)){ cat="완화의료"; icon="🕊️"; }
-      else if(/수술.*어려|수술적 치료.*어려|불가/i.test(s)){ cat="소견"; icon="🔪"; }
-      else if(/수술|op |시술|stent|insertion|조치/i.test(s)){ cat="수술/시술"; icon="🔪"; }
-      else if(/chemo|항암/i.test(s)){ cat="항암"; icon="💊"; }
-      else if(/투약|약물|유지|중단|처방|supplement|infusion|투여|적용|CRRT|saline|fluid|복용/i.test(s)){ cat="투약"; icon="💊"; }
-      else if(/의뢰|협진|consult|부탁|의견.*확인|재협진|상의/i.test(s)){ cat="협진"; icon="🏥"; }
-      else if(/외래|OPD|f\/u|follow/i.test(s)){ cat="외래"; icon="📅"; }
-      else if(/support|care|nutritional|영양/i.test(s)){ cat="간호"; icon="💉"; }
-      else if(/기대수명|예후|예상/i.test(s)){ cat="예후"; icon="⏳"; }
-      else if(/상담|서류|가족/i.test(s)){ cat="상담"; icon="👥"; }
-      else { cat="소견"; icon="🔬"; }
-      
-      let detail = s;
-      if(idx === picked.length - 1 && suffix) detail += suffix;
-      
-      if(detail.length > 200) detail = detail.substring(0, 197) + "...";
-      
-      r.instructions.push({
-        id: "cst_"+bi+"_"+idx,
-        task: deptCode,
-        detail: detail,
-        icon: icon,
-        category: cat,
-        blockIdx: bi
-      });
-    });
-  }
-} else {
-  // --- 기존 컨설트 지시사항 추출 (비회신 포맷) ---
-  const lines=t.split(/\n/);
-  const instrKw=/유지|추천|권고|시행|중단|변경|감량|증량|추가|제거|시작|지속|투약|투여|처방|협진|consult|의뢰|해주|바랍니다|부탁|드립니다|하십시오|고려/i;
-  const skipKw=/^입원경과|^입원결과|^향후계획|^퇴원장소|^진료기록|^\s*$|adm|입원/i;
-    
-  for(let i=0;i<lines.length;i++){
-    const line=lines[i].trim();
-    if(!line||skipKw.test(line)||line.length<5)continue;
-    const isNumbered=/^\d+[\.\)]\s*/.test(line)||/^[\*\-]\s+/.test(line);
-    if(isNumbered||instrKw.test(line)){
-      const cleaned=line.replace(/^\d+[\.\)]\s*/,'').replace(/^[\*\-]\s+/,'').trim();
-      if(cleaned.length>5){
-        let cat="지시";
-        if(/유지|지속|투약|투여|처방|시작|증량/i.test(cleaned))cat="투약";
-        if(/중단|감량|제거|없을|불필요|이유는 없/i.test(cleaned))cat="투약변경";
-        if(/협진|consult|의뢰/i.test(cleaned))cat="협진";
-        if(/외래|OPD|opd|f\/u|FU|follow/i.test(cleaned))cat="외래";
-        if(/검사|촬영|imaging|MRI|CT|X-ray|lab|시행/i.test(cleaned))cat="검사";
-        if(cat==="외래"||cat==="교육")continue;
-        const icons={"투약":"💊","투약변경":"⚠️","협진":"🏥","검사":"🔬","지시":"📋"};
-        r.instructions.push({id:"instr_"+i,task:cat,detail:cleaned,icon:icons[cat]||"📋",category:cat});
       }
     }
   }
-}
-return r;
-}
 
+  // --- OPD ---
+  const opdSet=new Set();
+  const opdKw=/외래|OPD|opd|f\/u|F\/U|follow[- ]?up/i;
+  const opdSkipKw=/상세내용|회신내용|의뢰의|배상|선생님|입원치료|치료계획.*상의|과거력|경과.*관찰|임종실|가능하도록|회신|소견|Opinion/i;
+  t.split(/\n/).forEach(line=>{
+    const l=line.trim();
+    if(!opdKw.test(l))return;
+    if(opdSkipKw.test(l))return;
+    let extracted=l.replace(/^[\*\-\d\.\)\s]+/,'').trim();
+    if(extracted.length>60){
+      const match=extracted.match(/.{0,25}(외래|OPD|f\/u|F\/U|follow[- ]?up).{0,25}/i);
+      if(match)extracted=match[0].trim();
+    }
+    if(extracted.length>3)opdSet.add(extracted);
+  });
+  const opdArr=[...opdSet];
+  const opdFiltered=[];
+  for(let i=0;i<opdArr.length;i++){
+    let skip=false;
+    for(let j=0;j<opdArr.length;j++){
+      if(i===j)continue;
+      const wi=opdArr[i].split(/\s+/),wj=opdArr[j].split(/\s+/);
+      const common=wi.filter(w=>w.length>1&&wj.includes(w));
+      if(common.length>=2&&opdArr[i].length>opdArr[j].length){skip=true;break;}
+    }
+    if(!skip)opdFiltered.push(opdArr[i]);
+  }
+  r.opdItems=opdFiltered;
+
+  // --- 교육 ---
+  const es=new Set();
+  t.split(/[.\n]/).filter(l=>/교육함|교육하였|설명함|하시도록|재내원|재방문/.test(l)).forEach(l=>{const c=l.trim();if(c.length>3)es.add(c);});
+  r.educationItems=[...es];
+
+  // --- NPO ---
+  if(/NPO|npo|금식/.test(t))r.npo=true;
+
+  // --- OP ---
+  const om=t.match(/(\bOP\b|수술)/gi);
+  if(om)for(const m of om){const i=t.indexOf(m),nb=t.substring(Math.max(0,i-30),Math.min(t.length,i+m.length+30));if(/예정|내일|모레|1st|2nd|시행|진행|올라가/i.test(nb)&&!/아님|없|안 |불필요|불가|안함|취소|보류/i.test(nb)){r.op=true;break;}}
+
+  // --- 진단서 ---
+  if(/진단서|소견서/.test(t))r.conditionalTasks.push({id:"c_doc",task:"진단서/서류발급",detail:"주치의요청(2만원,부본1천원)",icon:"📑"});
+
+  // --- 수혈 ---
+  r.hasTransfusion=(/수혈|transfusion|RBC|FFP|pheresis|PLT Tf|plt tf/i.test(t));
+
+  // --- 컨설트 회신 파싱 ---
+  if(isConsultFormat){
+    const blocks = t.split(/(?=\d+\.\s*.+?(?:회신|센터|Recommendation)\s*[\(\[])/).filter(b=>b.trim());
+    const finalBlocks = blocks.length > 0 ? blocks : [t];
+    
+    for(let bi=0; bi<finalBlocks.length; bi++){
+      const block = finalBlocks[bi];
+      if(!block.trim() || block.trim().length < 20) continue;
+      
+      let dept = "";
+      const headText = block.substring(0, 300);
+      const deptMatch = headText.match(/(완화의료|임상윤리|호스피스|비뇨의학과|비뇨기과|종양내과|혈액종양내과|혈액종양|신경과|신경외과|호흡기내과|소화기내과|순환기내과|심장내과|정형외과|흉부외과|재활의학과|정신건강|감염내과|신장내과|내분비내과|내분비|류마티스|알레르기|일반외과|외과|응급의학과|피부과|안과|이비인후과|산부인과)/);
+      if(deptMatch) dept = deptMatch[1];
+      if(!dept){
+        const abbr = headText.match(/\b(URO|GS|NS|NR|CS|OS|IMG|IMC|IMR|IMI|IMN|IME|IMJ|IMA|IMHO|NP|RM|PED|OBGY|ENT|EM)\b/i);
+        if(abbr) dept = abbr[1].toUpperCase();
+      }
+      if(!dept){
+        const sigMatch = block.match(/\b(URO|GS|NS|NR|CS|OS|IMG|IMC|IMR|IMI|IMN|IME|IMJ|IMA|IMHO|NP|RM|PED|OBGY|ENT|EM)\s*(?:F\.|R\d|교수|올림|배상)/i);
+        if(sigMatch) dept = sigMatch[1].toUpperCase();
+      }
+      if(!dept){
+        const korSig = block.match(/(호흡기내과|소화기내과|순환기내과|감염내과|신장내과|혈액종양내과|종양내과|신경과|신경외과|정형외과|흉부외과|외과|비뇨의학과)\s*(?:F\.|R\d|교수|올림|전임의|전공의)/i);
+        if(korSig) dept = korSig[1];
+      }
+      
+      const deptAbbrMap = {"비뇨의학과":"URO","비뇨기과":"URO","종양내과":"IMHO","혈액종양내과":"IMHO","혈액종양":"IMHO","신경과":"NR","신경외과":"NS","호흡기내과":"IMR","소화기내과":"IMG","순환기내과":"IMC","심장내과":"IMC","정형외과":"OS","흉부외과":"CS","재활의학과":"RM","정신건강":"NP","감염내과":"IMI","신장내과":"IMN","내분비내과":"IME","내분비":"IME","류마티스":"IMJ","알레르기":"IMA","일반외과":"GS","외과":"GS","완화의료":"완화의료","임상윤리":"완화의료","호스피스":"완화의료","피부과":"DERM","안과":"EYE","이비인후과":"ENT","산부인과":"OBGY"};
+      const deptCode = deptAbbrMap[dept] || dept;
+      if(!deptCode) continue;
+      
+      const admNeeded = /입원치료.*필요.*여부[\s\S]{0,30}예/i.test(block);
+      const transferRec = /타병원.*전원/i.test(block);
+      
+      if(transferRec && !r.disposition) r.disposition = "transfer";
+      if(admNeeded && !r.disposition) r.disposition = "admission";
+
+      let suffix = "";
+      if(admNeeded && transferRec) suffix = " → 타병원 전원 추천";
+      else if(admNeeded) suffix = " → 입원치료 필요";
+      else if(transferRec) suffix = " → 타병원 전원 추천";
+
+      let detailText = block;
+      detailText = detailText.replace(/입원치료 필요 여부[\s\S]*/, '');
+      detailText = detailText.replace(/추적관찰 및 소요시간[\s\S]*/, '');
+      
+      const parts = detailText.split(/(?:상세내용|회신내용|Opinion|Recommendation)\s*[:\n]+/i);
+      if (parts.length > 1) {
+          detailText = parts[parts.length - 1]; 
+      }
+      
+      if(detailText.length < 5) continue;
+      
+      const safeDetail = detailText.replace(/\b([A-Za-z])\.([A-Za-z])/g, '$1\u00B7$2').replace(/\b(s\/p|r\/o|op|Lt|Rt|Pf|Dr)\./gi, '$1\u00B7');
+      
+      const formattedDetail = safeDetail.replace(/(주시고|바라며|이므로|하므로|드리오니|권고드리나|필요합니다|해당합니다|가능하며)\s*,?\s*/g, (match, p1, offset, string) => {
+          const after = string.slice(offset);
+          const closeIdx = after.indexOf(')');
+          const openIdx = after.indexOf('(');
+          if (closeIdx !== -1 && (openIdx === -1 || closeIdx < openIdx)) {
+              return match; 
+          }
+          return p1 + '\n';
+      });
+
+      const sentences = formattedDetail.split(/(?:\.\s+)|(?:\.(?=$|\n))|\n/).map(s=>s.replace(/\u00B7/g,'.').replace(/^\s*[\*\-\d\.\)]\s*/,'').trim()).filter(s=>{
+        if(s.length < 5) return false;
+        if(/선생님|안녕하십니까|배상$|감사합니다|올림\.?$|^\s*[\*\-]\s*$/.test(s)) return false;
+        if(/^\s*\d{4}-\d{2}-\d{2}/.test(s) && s.length < 15) return false;
+        if(/환자진료시각|최종작성자/.test(s)) return false; 
+        return true;
+      });
+      
+      const highPriority = [];
+      const actionSentences = [];
+      const infoSentences = [];
+      
+      sentences.forEach(s => {
+        if(/호스피스|hospice|전원|연명.*불원|서류.*작성|상담.*완료|POLST|polst|DNR|dnr|사전연명/i.test(s)){
+          highPriority.push(s);
+        }
+        else if(/입원|퇴원|치료.*계획|chemo|항암|수술|시행|투약|중단|유지|의뢰|부탁|추천|권고|필요|외래|f\/u|FU|follow|상의|고려|어려|불가|가능|완화|연명|권하지|stent|weaning|병상|기대수명|상담|saline|fluid|hydration|prophylaxis|추적|관찰|투여|확인|복용/i.test(s)){
+          actionSentences.push(s);
+        } else if(/상태|소견|결과|사유|원인|재발|악화|risk/i.test(s)){
+          infoSentences.push(s);
+        }
+      });
+      
+      const picked = [];
+      highPriority.forEach(s => { if(picked.length < 8) picked.push(s); });
+      actionSentences.forEach(s => { if(picked.length < 8 && !picked.includes(s)) picked.push(s); });
+      infoSentences.forEach(s => { if(picked.length < 8 && !picked.includes(s)) picked.push(s); });
+      
+      picked.forEach((s, idx) => {
+        let cat = "검사";
+        let icon = "🔬";
+        if(/전원|입원|퇴원|discharge|병상|전과|전동/i.test(s)){ cat="배치"; icon="🏥"; }
+        else if(/호스피스|hospice|완화|연명|권하지|권유하지|임종/i.test(s)){ cat="완화의료"; icon="🕊️"; }
+        else if(/수술.*어려|수술적 치료.*어려|불가/i.test(s)){ cat="소견"; icon="🔪"; }
+        else if(/수술|op |시술|stent|insertion|조치/i.test(s)){ cat="수술/시술"; icon="🔪"; }
+        else if(/chemo|항암/i.test(s)){ cat="항암"; icon="💊"; }
+        else if(/투약|약물|유지|중단|처방|supplement|infusion|투여|적용|CRRT|saline|fluid|복용/i.test(s)){ cat="투약"; icon="💊"; }
+        else if(/의뢰|협진|consult|부탁|의견.*확인|재협진|상의/i.test(s)){ cat="협진"; icon="🏥"; }
+        else if(/외래|OPD|f\/u|follow/i.test(s)){ cat="외래"; icon="📅"; }
+        else if(/support|care|nutritional|영양/i.test(s)){ cat="간호"; icon="💉"; }
+        else if(/기대수명|예후|예상/i.test(s)){ cat="예후"; icon="⏳"; }
+        else if(/상담|서류|가족/i.test(s)){ cat="상담"; icon="👥"; }
+        else { cat="소견"; icon="🔬"; }
+        
+        let detail = s;
+        if(idx === picked.length - 1 && suffix) detail += suffix;
+        if(detail.length > 200) detail = detail.substring(0, 197) + "...";
+        
+        r.instructions.push({
+          id: "cst_"+bi+"_"+idx,
+          task: deptCode,
+          detail: detail,
+          icon: icon,
+          category: cat,
+          blockIdx: bi
+        });
+      });
+    }
+  } else {
+    // --- 일반 입원/퇴원 기록 추출 로직 (이 부분이 날아갔을 확률이 높습니다!) ---
+    const lines=t.split(/\n/);
+    // 짧은 영문 지시도 잘 잡히게 키워드 추가 (hydration, cst, 수액 등)
+    const instrKw=/유지|추천|권고|시행|중단|변경|감량|증량|추가|제거|시작|지속|투약|투여|처방|협진|consult|cst|의뢰|해주|바랍니다|부탁|드립니다|하십시오|고려|hydration|수액/i;
+    const skipKw=/^입원경과|^입원결과|^향후계획|^퇴원장소|^진료기록|^\s*$|adm|입원/i;
+      
+    for(let i=0;i<lines.length;i++){
+      const line=lines[i].trim();
+      // 짧은 단어도 잡아내도록 길이 기준 5자 -> 3자로 완화
+      if(!line||skipKw.test(line)||line.length<3)continue; 
+      const isNumbered=/^\d+[\.\)]\s*/.test(line)||/^[\*\-]\s+/.test(line);
+      if(isNumbered||instrKw.test(line)){
+        const cleaned=line.replace(/^\d+[\.\)]\s*/,'').replace(/^[\*\-]\s+/,'').trim();
+        if(cleaned.length>3){
+          let cat="지시";
+          if(/유지|지속|투약|투여|처방|시작|증량|hydration|수액/i.test(cleaned))cat="투약";
+          if(/중단|감량|제거|없을|불필요|이유는 없/i.test(cleaned))cat="투약변경";
+          if(/협진|consult|cst|의뢰/i.test(cleaned))cat="협진";
+          if(/외래|OPD|opd|f\/u|FU|follow/i.test(cleaned))cat="외래";
+          if(/검사|촬영|imaging|MRI|CT|X-ray|lab|시행/i.test(cleaned))cat="검사";
+          if(cat==="외래"||cat==="교육")continue;
+          const icons={"투약":"💊","투약변경":"⚠️","협진":"🏥","검사":"🔬","지시":"📋"};
+          r.instructions.push({id:"instr_"+i,task:cat,detail:cleaned,icon:icons[cat]||"📋",category:cat});
+        }
+      }
+    }
+  }
+  return r;
+}
 function buildChecklist(p){
   const items=[];
   // 입원 시 과별/유닛별 참고
