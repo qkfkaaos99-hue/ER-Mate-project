@@ -152,12 +152,18 @@
   <div id="inputScreen">
     <div class="input-panel">
       <div class="input-header">▶ 스마트 오더 분석 / 프로토콜 검색</div>
-      <div class="input-body">
+     <div class="input-body">
         <textarea id="inputText" 
-          placeholder="[사용법]
-1. 컨설트 복사붙여넣기 → 퇴실 체크리스트 생성
-   📋 복사범위: [입원경과] ~ [퇴원장소] 까지
-2. 시술명(ERCP, CAG 등)만 입력 → 표준 지침서 즉시 조회
+          placeholder="[스마트 오더 분석 사용법]
+
+1. 📋 퇴원 / 전원 / 입원 체크리스트
+   - 복사범위: [입원경과] ~ [퇴원장소] 까지 드래그
+
+2. 🩺 타과회신 (단독 컨설트 분석 시)
+   - 복사범위: 맨 위 [과명(제목)] ~ 맨 아래 [끝] 까지 통째로
+
+3. ⚡ 시술/업무 가이드 검색
+   - 'ERCP', 'CAG', '수혈', 'CIV' 등 단어만 입력
 
 Enter = 실행 / Shift+Enter = 줄바꿈" 
           oninput="updateBtn()" onpaste="setTimeout(updateBtn,50)" onchange="updateBtn()"
@@ -170,12 +176,12 @@ Enter = 실행 / Shift+Enter = 줄바꿈"
     <div class="examples" id="exCon">
     </div>
 
-    <div style="margin-top:15px; padding:10px; background:var(--bg2); border:1px solid var(--border); border-radius:4px; font-size:11px; color:var(--text3);">
+    <div style="margin-top:15px; padding:10px; background:var(--bg2); border:1px solid var(--border); border-radius:4px; font-size:11px; color:var(--text3); line-height: 1.6;">
       <strong>💡 Tip:</strong> 'ERCP', 'PTBD' 처럼 단어만 입력하면 시술 준비사항을 바로 알려드려요!<br>
-<strong>📖 가이드:</strong> '수혈', 'CIV', 'enema', '고칼륨', 'I/O', '간호기록' 등 업무 키워드도 검색 가능!<br>
-<strong>📋 복사범위:</strong> 진료기록조회 → <u>입원경과</u> ~ <u>퇴원장소</u>까지 드래그 복사 후 붙여넣기!
+      <strong>📖 가이드:</strong> '수혈', 'CIV', 'enema', '고칼륨', 'I/O', '간호기록' 등 업무 키워드도 검색 가능!<br>
+      <strong>📋 퇴원/전원 오더:</strong> 진료기록조회 → <u>입원경과</u> ~ <u>퇴원장소</u>까지 드래그 복사!<br>
+      <strong>🩺 타과회신 분석:</strong> 회신 <u>제목(과명)</u>부터 <u>맨 아래</u>까지 넉넉하게 통째로 복사!
     </div>
-  </div>
 
   <div id="resultScreen" class="hidden result"></div>
 
