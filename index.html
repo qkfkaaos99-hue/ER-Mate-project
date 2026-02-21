@@ -916,87 +916,83 @@ r.hasTransfusion=(/수혈|transfusion|RBC|FFP|pheresis|PLT Tf|plt tf/i.test(t));
 // --- 컨설트 회신 파싱 (과별 핵심 요약) ---
 
 if(isConsultFormat){
-  // 과별 회신 블록 분리 — 다양한 헤더 패턴
   const blocks = t.split(/(?=\d+\.\s*.+?(?:회신|센터|Recommendation)\s*[\(\[])/).filter(b=>b.trim());
-  // 분리 안 되면 전체를 1블록으로
   const finalBlocks = blocks.length > 0 ? blocks : [t];
   
   for(let bi=0; bi<finalBlocks.length; bi++){
     const block = finalBlocks[bi];
     if(!block.trim() || block.trim().length < 20) continue;
     
-    // 회신과 식별 — 1) 첫 줄에서 과명, 2) 본문에서 "IMR F." 같은 서명, 3) 약어
+    // 1. 과명 찾기 (윗부분 300자 안에서 넉넉히 탐색)
     let dept = "";
-    const firstLine = block.split(/\n/)[0];
-    const deptMatch = firstLine.match(/(완화의료|임상윤리|호스피스|비뇨의학과|비뇨기과|종양내과|혈액종양내과|혈액종양|신경과|신경외과|호흡기내과|소화기내과|순환기내과|심장내과|정형외과|흉부외과|재활의학과|정신건강|감염내과|신장내과|내분비내과|내분비|류마티스|알레르기|일반외과|외과|응급의학과|피부과|안과|이비인후과|산부인과)/);
+    const headText = block.substring(0, 300);
+    const deptMatch = headText.match(/(완화의료|임상윤리|호스피스|비뇨의학과|비뇨기과|종양내과|혈액종양내과|혈액종양|신경과|신경외과|호흡기내과|소화기내과|순환기내과|심장내과|정형외과|흉부외과|재활의학과|정신건강|감염내과|신장내과|내분비내과|내분비|류마티스|알레르기|일반외과|외과|응급의학과|피부과|안과|이비인후과|산부인과)/);
     if(deptMatch) dept = deptMatch[1];
-    // 약어 — 첫 줄에서
     if(!dept){
-      const abbr = firstLine.match(/\b(URO|GS|NS|NR|CS|OS|IMG|IMC|IMR|IMI|IMN|IME|IMJ|IMA|IMHO|NP|RM|PED|OBGY|ENT|EM)\b/i);
+      const abbr = headText.match(/\b(URO|GS|NS|NR|CS|OS|IMG|IMC|IMR|IMI|IMN|IME|IMJ|IMA|IMHO|NP|RM|PED|OBGY|ENT|EM)\b/i);
       if(abbr) dept = abbr[1].toUpperCase();
     }
-    // 본문 서명에서 과 식별: "IMR F.", "내과 2년차", "GS R2" 등
     if(!dept){
       const sigMatch = block.match(/\b(URO|GS|NS|NR|CS|OS|IMG|IMC|IMR|IMI|IMN|IME|IMJ|IMA|IMHO|NP|RM|PED|OBGY|ENT|EM)\s*(?:F\.|R\d|교수|올림|배상)/i);
       if(sigMatch) dept = sigMatch[1].toUpperCase();
     }
-    // 한글 과명에서 서명 추출: "내과 2년차", "호흡기내과 F."
     if(!dept){
       const korSig = block.match(/(호흡기내과|소화기내과|순환기내과|감염내과|신장내과|혈액종양내과|종양내과|신경과|신경외과|정형외과|흉부외과|외과|비뇨의학과)\s*(?:F\.|R\d|교수|올림|전임의|전공의)/i);
       if(korSig) dept = korSig[1];
     }
-    // 과 이름에서 약어로
+    
     const deptAbbrMap = {"비뇨의학과":"URO","비뇨기과":"URO","종양내과":"IMHO","혈액종양내과":"IMHO","혈액종양":"IMHO","신경과":"NR","신경외과":"NS","호흡기내과":"IMR","소화기내과":"IMG","순환기내과":"IMC","심장내과":"IMC","정형외과":"OS","흉부외과":"CS","재활의학과":"RM","정신건강":"NP","감염내과":"IMI","신장내과":"IMN","내분비내과":"IME","내분비":"IME","류마티스":"IMJ","알레르기":"IMA","일반외과":"GS","외과":"GS","완화의료":"완화의료","임상윤리":"완화의료","호스피스":"완화의료","피부과":"DERM","안과":"EYE","이비인후과":"ENT","산부인과":"OBGY"};
     const deptCode = deptAbbrMap[dept] || dept;
     if(!deptCode) continue;
     
-    // 상세내용 추출 — 다양한 헤더 패턴 지원
-    let detailText = "";
-    const detailMatch = block.match(/(?:상세내용|회신내용\s*요약|종합\s*소견|Opinion|Recommendation\s*>?)\s*[:\s]*([\s\S]*?)(?=입원치료|$)/i);
-    if(detailMatch){
-      detailText = detailMatch[0];
-    } else {
-      // 헤더 없는 경우: "회신내용" 키워드 이후 또는 첫줄 제외 전체
-      const hwMatch = block.match(/회신내용[\s\S]*?(?=입원치료|$)/i);
-      if(hwMatch) detailText = hwMatch[0];
-      else detailText = block.split(/\n/).slice(1).join('\n');
+    // 2. 입원/전원 보조 판단 (전체 텍스트 기준)
+    const admNeeded = /입원치료.*필요.*여부[\s\S]{0,30}예/i.test(block);
+    const transferRec = /타병원.*전원/i.test(block);
+    
+    if(transferRec && !r.disposition) r.disposition = "transfer";
+    if(admNeeded && !r.disposition) r.disposition = "admission";
+
+    let suffix = "";
+    if(admNeeded && transferRec) suffix = " → 타병원 전원 추천";
+    else if(admNeeded) suffix = " → 입원치료 필요";
+    else if(transferRec) suffix = " → 타병원 전원 추천";
+
+    // 3. 본문 텍스트 추출 (가비지 데이터 완벽 제거)
+    let detailText = block;
+    // 하단 EMR 시스템 텍스트 날리기
+    detailText = detailText.replace(/입원치료 필요 여부[\s\S]*/, '');
+    detailText = detailText.replace(/추적관찰 및 소요시간[\s\S]*/, '');
+    
+    // 회신내용, 상세내용 등 헤더 기준으로 쪼갠 뒤 맨 마지막 덩어리(진짜 본문)만 취득
+    const parts = detailText.split(/(?:상세내용|회신내용|Opinion|Recommendation)\s*[:\n]+/i);
+    if (parts.length > 1) {
+        detailText = parts[parts.length - 1]; 
     }
-    if(detailText.length < 10) continue;
     
-    // 노이즈 제거 패턴
-    const noiseKw = /선생님|안녕하십니까|배상$|감사합니다|회신내용|상세내용|환자진료시각|의뢰의|작성시간|최종작성자|종합\s*소견|Opinion|^\s*[\*\-]\s*$/;
-    const dateOnly = /^\s*\d{4}-\d{2}-\d{2}/;
-    const bgInfo = /확인되었던 환자|환자입니다$|환자분입니다|내원하신|진료의뢰|진단명|Diagnosis|과거력:|초기 진단 시에도/;
-    const diagLine = /^\d+\.\s*[A-Z].*(?:stage|s\/p|Fx|HTN|cancer|DLBL|effusion|impairment)/i;
+    if(detailText.length < 5) continue;
     
-    // 핵심 문장 추출 — 의학 약어(G.C, s/p, r/o, Lt., Rt., op., Pf.)의 마침표 보존
     const safeDetail = detailText.replace(/\b([A-Za-z])\.([A-Za-z])/g, '$1\u00B7$2').replace(/\b(s\/p|r\/o|op|Lt|Rt|Pf|Dr)\./gi, '$1\u00B7');
     
-    // [수정점] 임상에서 자주 쓰는 연결어미를 기준으로 줄바꿈(\n)을 삽입하되,
-    // 괄호 ( ) 안의 복용법이나 설명은 중간에 쪼개지지 않도록 방어 로직 추가
-    const formattedDetail = safeDetail.replace(/(주시고|바라며|이므로|하므로|드리오니|권고드리나|필요합니다|해당합니다)\s*,?\s*/g, (match, p1, offset, string) => {
+    // 4. 문장 분리 (연결어미 기준 및 괄호 보호)
+    const formattedDetail = safeDetail.replace(/(주시고|바라며|이므로|하므로|드리오니|권고드리나|필요합니다|해당합니다|가능하며)\s*,?\s*/g, (match, p1, offset, string) => {
         const after = string.slice(offset);
         const closeIdx = after.indexOf(')');
         const openIdx = after.indexOf('(');
-        // 뒤에 닫는 괄호 ')'가 먼저 나오면 괄호 안이라고 판단하여 자르지 않고 원본 유지
         if (closeIdx !== -1 && (openIdx === -1 || closeIdx < openIdx)) {
             return match; 
         }
         return p1 + '\n';
     });
 
-    // 마침표 및 새로 추가된 줄바꿈 기준으로 배열화합니다.
     const sentences = formattedDetail.split(/(?:\.\s+)|(?:\.(?=$|\n))|\n/).map(s=>s.replace(/\u00B7/g,'.').replace(/^\s*[\*\-\d\.\)]\s*/,'').trim()).filter(s=>{
       if(s.length < 5) return false;
-      if(noiseKw.test(s)) return false;
-      if(dateOnly.test(s) && s.length < 15) return false;
-      if(/^\s*(?:상세내용|회신내용|종합\s*소견)\s*:?\s*$/i.test(s)) return false;
-      if(bgInfo.test(s)) return false;
-      if(diagLine.test(s)) return false;
+      // 노이즈 텍스트 필터링 (선생님, 올림, 등등)
+      if(/선생님|안녕하십니까|배상$|감사합니다|올림\.?$|^\s*[\*\-]\s*$/.test(s)) return false;
+      if(/^\s*\d{4}-\d{2}-\d{2}/.test(s) && s.length < 15) return false;
+      if(/환자진료시각|최종작성자/.test(s)) return false; 
       return true;
     });
     
-    // 핵심 키워드 기반 요약 (행동 가능한 것 우선)
     const highPriority = [];
     const actionSentences = [];
     const infoSentences = [];
@@ -1005,35 +1001,18 @@ if(isConsultFormat){
       if(/호스피스|hospice|전원|연명.*불원|서류.*작성|상담.*완료|POLST|polst|DNR|dnr|사전연명/i.test(s)){
         highPriority.push(s);
       }
-      // 임상 처치 키워드 유지
-      else if(/입원|퇴원|치료.*계획|chemo|항암|수술|시행|투약|중단|유지|의뢰|부탁|추천|권고|필요|외래|f\/u|FU|follow|상의|고려|어려|불가|가능|완화|연명|권하지|stent|weaning|병상|기대수명|상담|saline|fluid|hydration|prophylaxis|추적|투여|확인|복용/i.test(s)){
+      else if(/입원|퇴원|치료.*계획|chemo|항암|수술|시행|투약|중단|유지|의뢰|부탁|추천|권고|필요|외래|f\/u|FU|follow|상의|고려|어려|불가|가능|완화|연명|권하지|stent|weaning|병상|기대수명|상담|saline|fluid|hydration|prophylaxis|추적|관찰|투여|확인|복용/i.test(s)){
         actionSentences.push(s);
       } else if(/상태|소견|결과|사유|원인|재발|악화|risk/i.test(s)){
         infoSentences.push(s);
       }
     });
     
-    // 추출 개수 제한 8개
     const picked = [];
     highPriority.forEach(s => { if(picked.length < 8) picked.push(s); });
     actionSentences.forEach(s => { if(picked.length < 8 && !picked.includes(s)) picked.push(s); });
     infoSentences.forEach(s => { if(picked.length < 8 && !picked.includes(s)) picked.push(s); });
     
-    // 입원 필요 여부
-    const admNeeded = /입원치료.*필요.*여부[\s\S]{0,30}예/i.test(block);
-    const transferRec = /타병원.*전원/i.test(block);
-    
-    // disposition 보조 판단
-    if(transferRec && !r.disposition) r.disposition = "transfer";
-    if(admNeeded && !r.disposition) r.disposition = "admission";
-
-    // 입원/전원 정보를 suffix로 병합
-    let suffix = "";
-    if(admNeeded && transferRec) suffix = " → 타병원 전원 추천";
-    else if(admNeeded) suffix = " → 입원치료 필요";
-    else if(transferRec) suffix = " → 타병원 전원 추천";
-    
-    // 카테고리 자동 분류
     picked.forEach((s, idx) => {
       let cat = "검사";
       let icon = "🔬";
@@ -1050,11 +1029,9 @@ if(isConsultFormat){
       else if(/상담|서류|가족/i.test(s)){ cat="상담"; icon="👥"; }
       else { cat="소견"; icon="🔬"; }
       
-      // 마지막 항목에만 suffix 붙이기
       let detail = s;
       if(idx === picked.length - 1 && suffix) detail += suffix;
       
-      // 글자 수 제한 완화 (200자)
       if(detail.length > 200) detail = detail.substring(0, 197) + "...";
       
       r.instructions.push({
