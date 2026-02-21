@@ -969,11 +969,15 @@ if(isConsultFormat){
     const bgInfo = /확인되었던 환자|환자입니다$|환자분입니다|내원하신|진료의뢰|진단명|Diagnosis|과거력:|초기 진단 시에도/;
     const diagLine = /^\d+\.\s*[A-Z].*(?:stage|s\/p|Fx|HTN|cancer|DLBL|effusion|impairment)/i;
     
-    // 핵심 문장 추출 — 의학 약어(G.C, s/p, r/o, Lt., Rt., op., Pf.)의 마침표는 보존
+    // 핵심 문장 추출 — 의학 약어(G.C, s/p, r/o, Lt., Rt., op., Pf.)의 마침표 보존
     const safeDetail = detailText.replace(/\b([A-Za-z])\.([A-Za-z])/g, '$1\u00B7$2').replace(/\b(s\/p|r\/o|op|Lt|Rt|Pf|Dr)\./gi, '$1\u00B7');
-    // 문장 분리: 마침표, 줄바꿈, 또는 "~분으로," "~없어" 같은 접속 패턴
-    const sentences = safeDetail.split(/\.\s|\n|(?<=.{30}),\s*(?=현재|해당|입원|가능|호스피스|다만|추가)/).map(s=>s.replace(/\u00B7/g,'.').replace(/^\s*[\*\-\d\.\)]\s*/,'').trim()).filter(s=>{
-      if(s.length < 8) return false;
+    
+    // [수정점] 임상에서 자주 쓰는 연결어미를 기준으로 줄바꿈(\n)을 삽입하여 문장을 잘게 쪼갭니다.
+    const formattedDetail = safeDetail.replace(/(주시고|바라며|이므로|하므로|드리오니|권고드리나|필요합니다|해당합니다)\s*,?\s*/g, '$1\n');
+
+    // [수정점] 마침표 및 새로 추가된 줄바꿈 기준으로 배열화합니다.
+    const sentences = formattedDetail.split(/(?:\.\s+)|(?:\.(?=$|\n))|\n/).map(s=>s.replace(/\u00B7/g,'.').replace(/^\s*[\*\-\d\.\)]\s*/,'').trim()).filter(s=>{
+      if(s.length < 5) return false; // 제한 8자 -> 5자로 완화
       if(noiseKw.test(s)) return false;
       if(dateOnly.test(s) && s.length < 15) return false;
       if(/^\s*(?:상세내용|회신내용|종합\s*소견)\s*:?\s*$/i.test(s)) return false;
@@ -988,22 +992,22 @@ if(isConsultFormat){
     const infoSentences = [];
     
     sentences.forEach(s => {
-      // 최우선: 호스피스/전원/연명/서류 관련
       if(/호스피스|hospice|전원|연명.*불원|서류.*작성|상담.*완료|POLST|polst|DNR|dnr|사전연명/i.test(s)){
         highPriority.push(s);
       }
-      else if(/입원|퇴원|치료.*계획|chemotherapy|항암.*추천|항암.*불가|수술|시행|투약|중단|유지|의뢰|부탁|추천|권고|필요|외래|f\/u|FU|follow|상의|고려|어려운|어려움|불가|가능|완화|연명|권하지|권유하지|stent|weaning|병상|전환|기대수명|상담/i.test(s)){
+      // [수정점] saline, fluid, prophylaxis, 확인, 추적 등 임상 처치 키워드 대폭 추가
+      else if(/입원|퇴원|치료.*계획|chemo|항암|수술|시행|투약|중단|유지|의뢰|부탁|추천|권고|필요|외래|f\/u|FU|follow|상의|고려|어려|불가|가능|완화|연명|권하지|stent|weaning|병상|기대수명|상담|saline|fluid|hydration|prophylaxis|추적|투여|확인|복용/i.test(s)){
         actionSentences.push(s);
-      } else if(/확인|상태|소견|결과|사유|원인|재발|악화/i.test(s)){
+      } else if(/상태|소견|결과|사유|원인|재발|악화|risk/i.test(s)){ // risk 추가
         infoSentences.push(s);
       }
     });
     
-    // 최대 3개: 최우선 → 행동 → 정보 순서
+    // [수정점] 추출 개수 제한 3개 -> 8개로 상향
     const picked = [];
-    highPriority.forEach(s => { if(picked.length < 3) picked.push(s); });
-    actionSentences.forEach(s => { if(picked.length < 3) picked.push(s); });
-    if(picked.length === 0) infoSentences.forEach(s => { if(picked.length < 1) picked.push(s); });
+    highPriority.forEach(s => { if(picked.length < 8) picked.push(s); });
+    actionSentences.forEach(s => { if(picked.length < 8 && !picked.includes(s)) picked.push(s); });
+    infoSentences.forEach(s => { if(picked.length < 8 && !picked.includes(s)) picked.push(s); });
     
     // 입원 필요 여부
     const admNeeded = /입원치료.*필요.*여부[\s\S]{0,30}예/i.test(block);
@@ -1028,7 +1032,7 @@ if(isConsultFormat){
       else if(/수술.*어려|수술적 치료.*어려|불가/i.test(s)){ cat="소견"; icon="🔪"; }
       else if(/수술|op |시술|stent|insertion|조치/i.test(s)){ cat="수술/시술"; icon="🔪"; }
       else if(/chemo|항암/i.test(s)){ cat="항암"; icon="💊"; }
-      else if(/투약|약물|유지|중단|처방|supplement|infusion|투여|적용|CRRT/i.test(s)){ cat="투약"; icon="💊"; }
+      else if(/투약|약물|유지|중단|처방|supplement|infusion|투여|적용|CRRT|saline|fluid|복용/i.test(s)){ cat="투약"; icon="💊"; }
       else if(/의뢰|협진|consult|부탁|의견.*확인|재협진|상의/i.test(s)){ cat="협진"; icon="🏥"; }
       else if(/외래|OPD|f\/u|follow/i.test(s)){ cat="외래"; icon="📅"; }
       else if(/support|care|nutritional|영양/i.test(s)){ cat="간호"; icon="💉"; }
@@ -1039,7 +1043,9 @@ if(isConsultFormat){
       // 마지막 항목에만 suffix 붙이기
       let detail = s;
       if(idx === picked.length - 1 && suffix) detail += suffix;
-      if(detail.length > 100) detail = detail.substring(0, 97) + "...";
+      
+      // [수정점] 글자 수 100자 -> 200자 제한으로 늘려서 내용 잘림 방지
+      if(detail.length > 200) detail = detail.substring(0, 197) + "...";
       
       r.instructions.push({
         id: "cst_"+bi+"_"+idx,
