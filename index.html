@@ -1131,6 +1131,7 @@ if(isConsultFormat){
     }
   }
 }
+r.isConsult = isConsultFormat;
 return r;
 }
 
@@ -1162,7 +1163,7 @@ function buildChecklist(p){
     });
   }
   // 검사/시술
-  for(const procName of p.procedures){
+  for(const procName of (p.isConsult ? [] : p.procedures)){
     const proc=PROCEDURE_DB[procName];
     if(!proc)continue;
     const pid="proc_"+procName;
