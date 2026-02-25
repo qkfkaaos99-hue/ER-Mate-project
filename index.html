@@ -1078,7 +1078,7 @@ if(isConsultFormat){
       if(/호스피스|hospice|전원|연명.*불원|서류.*작성|상담.*완료|POLST|polst|DNR|dnr|사전연명/i.test(s)){
         highPriority.push(s);
       }
-      else if(/입원|퇴원|치료.*계획|chemotherapy|항암.*추천|항암.*불가|수술|시행|투약|중단|유지|의뢰|부탁|추천|권고|필요|외래|f\/u|FU|follow|상의|고려|어려운|어려움|불가|가능|완화|연명|권하지|권유하지|stent|weaning|병상|전환|기대수명|상담|요망|진행\s*요망|검사\s*진행|echocardiography|echo|시행\s*요망|확인\s*요망|의뢰\s*요망/i.test(s)){
+      else if(/입원|퇴원|치료.*계획|chemotherapy|항암.*추천|항암.*불가|수술|시행|투약|중단|유지|의뢰|부탁|추천|권고|필요|외래|f\/u|FU|follow|상의|고려|어려운|어려움|불가|가능|완화|연명|권하지|권유하지|stent|weaning|병상|전환|기대수명|상담|요망|echocardiography|echo|시행\s*요망|확인\s*요망|의뢰\s*요망/i.test(s)){
         actionSentences.push(s);
       } else if(/확인|상태|소견|결과|사유|원인|재발|악화/i.test(s)){
         infoSentences.push(s);
