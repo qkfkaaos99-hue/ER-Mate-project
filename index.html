@@ -916,11 +916,11 @@ else if (/ICU|중환자실/i.test(t)) {
 }
 
 // --- 컨설트 포맷 판별 (시술 매칭 스킵용) ---
-const isConsultFormat = /회신|상세내용|입원치료.*필요|종합.*소견|Recommendation/i.test(t);
+const isConsultFormat = /회신|상세내용|입원치료.*필요|종합.*소견|Recommendation|계획\s*및\s*권고|타과회신|구분:\s*타과|회신\s*개요|평가\s*\(A\)|계획\s*\(P\)/i.test(t);
 
 // --- 검사/시술: PROCEDURE_DB 키워드 매칭 (컨설트 회신에서는 스킵) ---
 if(!isConsultFormat){
-const actionKw=/시행|예정|check|찍|보내|촬영|예약|의뢰|콜|call|준비|go|schedule|내일|모레|1st|2nd/i;
+const actionKw=/시행\s*예정|시행\s*함|시행\s*하|예정|준비\s*해|콜\s*해|call\s*해|내일|모레|1st|2nd|go\s*예정|schedule/i;
 const imagingActionKw=/시행|예정|찍|보내|촬영|예약|콜|call|준비|go|schedule/i;
 const imagingExclude=/결과|소견|상|판독|reading|보면|에서|finding|review/i;
 for(const[name,proc]of Object.entries(PROCEDURE_DB)){
@@ -931,7 +931,7 @@ for(const[name,proc]of Object.entries(PROCEDURE_DB)){
     if(name==="CT"||name==="MRI"){
       if(imagingActionKw.test(nearby)&&!imagingExclude.test(nearby))r.procedures.push(name);
     } else {
-      if(name!=="OP"&&actionKw.test(nearby))r.procedures.push(name);
+      if(actionKw.test(nearby))r.procedures.push(name);
     }
   }
 }
