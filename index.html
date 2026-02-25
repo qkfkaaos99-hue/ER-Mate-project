@@ -940,7 +940,8 @@ for(const[name,proc]of Object.entries(PROCEDURE_DB)){
 // --- OPD ---
 const opdSet=new Set();
 const opdKw=/외래|OPD|opd|f\/u|F\/U|follow[- ]?up/i;
-const opdSkipKw=/상세내용|회신내용|의뢰의|배상|선생님|입원치료|치료계획.*상의|과거력|경과.*관찰|임종실|가능하도록|회신|소견|Opinion/i;
+const opdSkipKw=/상세내용|회신내용|의뢰의|배상|선생님|입원치료|치료계획.*상의|과거력|경과.*관찰|임종실|가능하도록|회신|소견|Opinion|타원|타병원|고신|협진|계획.*및.*권고|권고사항|상의\s*요망|의뢰함|의뢰하|보내드|외래.*상의|OPD.*상의|추적관찰|객관적|평가\s*\(|계획\s*\(/i;
+if(!isConsultFormat){
 t.split(/\n/).forEach(line=>{
   const l=line.trim();
   if(!opdKw.test(l))return;
@@ -951,8 +952,9 @@ t.split(/\n/).forEach(line=>{
     if(match)extracted=match[0].trim();
   }
   const snuhOPD=/SNUH|서울대|본원|당원|(\b(IMR|IMJ|IMN|IMHO|IMI|IMG|IMC|IME|IMA|IMHM|NP|NR|NS|GS|CS|OS|EM|PED|OBGY|URO|ENT|RM)\b.*(?:외래|OPD|f\/u))|(?:외래|OPD|f\/u).*\b(IMR|IMJ|IMN|IMHO|IMI|IMG|IMC|IME|IMA|IMHM|NP|NR|NS|GS|CS|OS|EM|PED|OBGY|URO|ENT|RM)\b|ENDO\s*OPD|GI\s*OPD|CARD\s*OPD|as\s*scheduled/i;
-if(extracted.length>3 && (snuhOPD.test(extracted) || snuhOPD.test(l)))opdSet.add(extracted);
+  if(extracted.length>3 && (snuhOPD.test(extracted) || snuhOPD.test(l)))opdSet.add(extracted);
 });
+}
 const opdArr=[...opdSet];
 const opdFiltered=[];
 for(let i=0;i<opdArr.length;i++){
@@ -968,19 +970,23 @@ for(let i=0;i<opdArr.length;i++){
 r.opdItems=opdFiltered;
 
 // --- 교육 ---
+if(!isConsultFormat){
 const es=new Set();
 t.split(/[.\n]/).filter(l=>/교육함|교육하였|설명함|하시도록|재내원|재방문/.test(l)).forEach(l=>{const c=l.trim();if(c.length>3)es.add(c);});
 r.educationItems=[...es];
+}
 
 // --- NPO ---
-if(/NPO|npo|금식/.test(t))r.npo=true;
+if(!isConsultFormat && /NPO|npo|금식/.test(t))r.npo=true;
 
 // --- OP ---
+if(!isConsultFormat){
 const om=t.match(/(\bOP\b|수술)/gi);
 if(om)for(const m of om){const i=t.indexOf(m),nb=t.substring(Math.max(0,i-30),Math.min(t.length,i+m.length+30));if(/예정|내일|모레|1st|2nd|시행|진행|올라가/i.test(nb)&&!/아님|없|안 |불필요|불가|안함|취소|보류/i.test(nb)){r.op=true;break;}}
+}
 
 // --- 진단서 ---
-if(/진단서|소견서/.test(t))r.conditionalTasks.push({id:"c_doc",task:"진단서/서류발급",detail:"주치의요청(2만원,부본1천원)",icon:"📑"});
+if(!isConsultFormat && /진단서|소견서/.test(t))r.conditionalTasks.push({id:"c_doc",task:"진단서/서류발급",detail:"주치의요청(2만원,부본1천원)",icon:"📑"});
 
 // --- 수혈 ---
 r.hasTransfusion=(/수혈|transfusion|RBC|FFP|pheresis|PLT Tf|plt tf/i.test(t));
@@ -1026,21 +1032,27 @@ if(isConsultFormat){
     
     // 상세내용 추출 — 다양한 헤더 패턴 지원
     let detailText = "";
-    const detailMatch = block.match(/(?:상세내용|회신내용\s*요약|종합\s*소견|Opinion|Recommendation\s*>?|계획\s*및\s*권고\s*\(P\)|계획\s*및\s*권고)\s*[:\s]*([\s\S]*?)(?=입원치료|행정\s*사항|회신자|$)/i);
-    if(detailMatch){
-      detailText = detailMatch[0];
+    // 1순위: "계획 및 권고" 섹션
+    const planMatch = block.match(/계획\s*및\s*권고\s*(?:\(P\))?\s*\n([\s\S]*?)(?=행정\s*사항|회신자\s*:|$)/i);
+    if(planMatch) {
+      detailText = planMatch[1];
     } else {
-      // 헤더 없는 경우: "회신내용" 키워드 이후 또는 첫줄 제외 전체
-      const hwMatch = block.match(/회신내용[\s\S]*?(?=입원치료|$)/i);
-      if(hwMatch) detailText = hwMatch[0];
-      else detailText = block.split(/\n/).slice(1).join('\n');
+      // 2순위: 기존 헤더 패턴
+      const detailMatch = block.match(/(?:상세내용|회신내용\s*요약|종합\s*소견|Opinion|Recommendation\s*>?)\s*[:\s]*([\s\S]*?)(?=입원치료|행정\s*사항|회신자|$)/i);
+      if(detailMatch){
+        detailText = detailMatch[0];
+      } else {
+        const hwMatch = block.match(/회신내용[\s\S]*?(?=입원치료|$)/i);
+        if(hwMatch) detailText = hwMatch[0];
+        else detailText = block.split(/\n/).slice(1).join('\n');
+      }
     }
     if(detailText.length < 10) continue;
     
     // 노이즈 제거 패턴
-    const noiseKw = /선생님|안녕하십니까|배상$|감사합니다|회신내용|상세내용|환자진료시각|의뢰의|작성시간|최종작성자|종합\s*소견|Opinion|^\s*[\*\-]\s*$/;
+    const noiseKw = /선생님|안녕하십니까|배상$|감사합니다|회신내용|상세내용|환자진료시각|의뢰의|작성시간|최종작성자|종합\s*소견|Opinion|^\s*[\*\-]\s*$|초음파\s*소견\s*비교|호흡부전\s*원인|위험성:|권고사항:|객관적\s*소견|평가\s*\(A\)|V\/S:|Lab:|ABGA:|Bedside/;
     const dateOnly = /^\s*\d{4}-\d{2}-\d{2}/;
-    const bgInfo = /확인되었던 환자|환자입니다$|환자분입니다|내원하신|진료의뢰|진단명|Diagnosis|과거력:|초기 진단 시에도/;
+    const bgInfo = /확인되었던 환자|환자입니다$|환자분입니다|내원하신|진료의뢰|진단명|Diagnosis|과거력:|초기 진단 시에도|의뢰 사유:|기저질환/;
     const diagLine = /^\d+\.\s*[A-Z].*(?:stage|s\/p|Fx|HTN|cancer|DLBL|effusion|impairment)/i;
     
     // 핵심 문장 추출 — 의학 약어(G.C, s/p, r/o, Lt., Rt., op., Pf.)의 마침표는 보존
@@ -1066,7 +1078,7 @@ if(isConsultFormat){
       if(/호스피스|hospice|전원|연명.*불원|서류.*작성|상담.*완료|POLST|polst|DNR|dnr|사전연명/i.test(s)){
         highPriority.push(s);
       }
-      else if(/입원|퇴원|치료.*계획|chemotherapy|항암.*추천|항암.*불가|수술|시행|투약|중단|유지|의뢰|부탁|추천|권고|필요|외래|f\/u|FU|follow|상의|고려|어려운|어려움|불가|가능|완화|연명|권하지|권유하지|stent|weaning|병상|전환|기대수명|상담/i.test(s)){
+      else if(/입원|퇴원|치료.*계획|chemotherapy|항암.*추천|항암.*불가|수술|시행|투약|중단|유지|의뢰|부탁|추천|권고|필요|외래|f\/u|FU|follow|상의|고려|어려운|어려움|불가|가능|완화|연명|권하지|권유하지|stent|weaning|병상|전환|기대수명|상담|요망|진행\s*요망|검사\s*진행|echocardiography|echo|시행\s*요망|확인\s*요망|의뢰\s*요망/i.test(s)){
         actionSentences.push(s);
       } else if(/확인|상태|소견|결과|사유|원인|재발|악화/i.test(s)){
         infoSentences.push(s);
