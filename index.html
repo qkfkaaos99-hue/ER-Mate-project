@@ -950,7 +950,8 @@ t.split(/\n/).forEach(line=>{
     const match=extracted.match(/.{0,25}(외래|OPD|f\/u|F\/U|follow[- ]?up).{0,25}/i);
     if(match)extracted=match[0].trim();
   }
-  if(extracted.length>3)opdSet.add(extracted);
+  const snuhOPD=/SNUH|서울대|본원|당원|(\b(IMR|IMJ|IMN|IMHO|IMI|IMG|IMC|IME|IMA|IMHM|NP|NR|NS|GS|CS|OS|EM|PED|OBGY|URO|ENT|RM)\b.*(?:외래|OPD|f\/u))|(?:외래|OPD|f\/u).*\b(IMR|IMJ|IMN|IMHO|IMI|IMG|IMC|IME|IMA|IMHM|NP|NR|NS|GS|CS|OS|EM|PED|OBGY|URO|ENT|RM)\b|ENDO\s*OPD|GI\s*OPD|CARD\s*OPD|as\s*scheduled/i;
+if(extracted.length>3 && (snuhOPD.test(extracted) || snuhOPD.test(l)))opdSet.add(extracted);
 });
 const opdArr=[...opdSet];
 const opdFiltered=[];
