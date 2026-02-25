@@ -916,7 +916,7 @@ else if (/ICU|중환자실/i.test(t)) {
 }
 
 // --- 컨설트 포맷 판별 (시술 매칭 스킵용) ---
-const isConsultFormat = /회신|상세내용|입원치료.*필요|종합.*소견|Recommendation|계획\s*및\s*권고|타과회신|구분:\s*타과|회신\s*개요|평가\s*\(A\)|계획\s*\(P\)/i.test(t);
+const isConsultFormat = /회신|상세내용|입원치료.*필요|종합.*소견|Recommendation|계획\s*및\s*권고|타과회신|구분:\s*타과|회신\s*개요|평가\s*\(A\)|계획\s*\(P\)|권고사항|회신자|진료과:\s*(순환기|신경|호흡기|소화기|감염|신장|혈액|정형|흉부|신경외)/i.test(t);
 
 // --- 검사/시술: PROCEDURE_DB 키워드 매칭 (컨설트 회신에서는 스킵) ---
 if(!isConsultFormat){
@@ -999,8 +999,10 @@ if(isConsultFormat){
     
     // 회신과 식별 — 1) 첫 줄에서 과명, 2) 본문에서 "IMR F." 같은 서명, 3) 약어
     let dept = "";
-    const firstLine = block.split(/\n/)[0];
-    const deptMatch = firstLine.match(/(완화의료|임상윤리|호스피스|비뇨의학과|비뇨기과|종양내과|혈액종양내과|혈액종양|신경과|신경외과|호흡기내과|소화기내과|순환기내과|심장내과|정형외과|흉부외과|재활의학과|정신건강|감염내과|신장내과|내분비내과|내분비|류마티스|알레르기|일반외과|외과|응급의학과|피부과|안과|이비인후과|산부인과)/);
+  const firstLine = block.split(/\n/)[0];
+  const deptLineMatch = block.match(/진료과\s*:\s*([^\n\r]+)/);
+  const searchLine = deptLineMatch ? deptLineMatch[1] : firstLine;
+  const deptMatch = searchLine.match(/(완화의료|임상윤리|호스피스|비뇨의학과|비뇨기과|종양내과|혈액종양내과|혈액종양|신경과|신경외과|호흡기내과|소화기내과|순환기내과|심장내과|정형외과|흉부외과|재활의학과|정신건강|감염내과|신장내과|내분비내과|내분비|류마티스|알레르기|일반외과|외과|응급의학과|피부과|안과|이비인후과|산부인과)/);
     if(deptMatch) dept = deptMatch[1];
     // 약어 — 첫 줄에서
     if(!dept){
@@ -1024,7 +1026,7 @@ if(isConsultFormat){
     
     // 상세내용 추출 — 다양한 헤더 패턴 지원
     let detailText = "";
-    const detailMatch = block.match(/(?:상세내용|회신내용\s*요약|종합\s*소견|Opinion|Recommendation\s*>?)\s*[:\s]*([\s\S]*?)(?=입원치료|$)/i);
+    const detailMatch = block.match(/(?:상세내용|회신내용\s*요약|종합\s*소견|Opinion|Recommendation\s*>?|계획\s*및\s*권고\s*\(P\)|계획\s*및\s*권고)\s*[:\s]*([\s\S]*?)(?=입원치료|행정\s*사항|회신자|$)/i);
     if(detailMatch){
       detailText = detailMatch[0];
     } else {
