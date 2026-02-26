@@ -128,6 +128,36 @@
   .edit-box textarea { min-height: 80px; }
   .btn-regen { width: 100%; margin-top: 4px; padding: 6px 0; background: var(--hdr-bg1); border: 1px solid var(--hdr-border); color: #fff; font-size: 11px; font-weight: 700; cursor: pointer; border-radius: 2px; }
   .hidden { display: none !important; }
+
+  /* ── 사용설명서 모달 ── */
+  .man-overlay { position:fixed;top:0;left:0;right:0;bottom:0;background:var(--overlay-bg);display:flex;align-items:flex-start;justify-content:center;z-index:1000;padding:10px;overflow-y:auto; }
+  .man-modal { background:var(--bg2);border:1px solid var(--hdr-border);border-radius:4px;width:100%;max-width:600px;margin:auto; }
+  .man-hdr { background:linear-gradient(180deg,var(--hdr-bg1),var(--hdr-bg2));padding:9px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--hdr-border); }
+  .man-hdr-title { color:#fff;font-size:13px;font-weight:700; }
+  .man-close { background:none;border:1px solid rgba(255,255,255,.3);color:#fff;padding:4px 10px;cursor:pointer;border-radius:2px;font-size:12px;touch-action:manipulation; }
+  .man-tabs { display:flex;background:var(--bg3);border-bottom:1px solid var(--border);overflow-x:auto; }
+  .man-tab { padding:8px 13px;font-size:11px;font-weight:700;cursor:pointer;border-bottom:2px solid transparent;color:var(--text3);white-space:nowrap;touch-action:manipulation;flex-shrink:0; }
+  .man-tab.on { color:var(--blue);border-bottom-color:var(--blue); }
+  .man-body { padding:12px;max-height:72vh;overflow-y:auto; }
+  .mn-sec { margin-bottom:12px; }
+  .mn-title { font-size:11px;font-weight:700;color:var(--blue);border-bottom:1px solid var(--border);padding-bottom:3px;margin-bottom:7px; }
+  .mn-card { background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:9px 11px;margin-bottom:6px; }
+  .mn-card-title { font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px; }
+  .mn-card-sub { font-size:11px;color:var(--text2);line-height:1.6; }
+  .mn-tip { background:var(--section-mand-bg1);border:1px solid var(--section-mand-border);border-left:3px solid var(--green);border-radius:2px;padding:7px 10px;font-size:11px;color:var(--green);margin-bottom:6px; }
+  .mn-warn { background:var(--warn-bg);border:1px solid var(--warn-border);border-left:3px solid var(--yellow);border-radius:2px;padding:7px 10px;font-size:11px;color:var(--yellow);margin-bottom:6px; }
+  .mn-tbl { width:100%;border-collapse:collapse;font-size:11px;margin:4px 0 8px; }
+  .mn-tbl th { background:var(--hdr-bg1);color:#fff;padding:5px 8px;text-align:left;font-weight:700; }
+  .mn-tbl td { padding:5px 8px;border-bottom:1px solid var(--border2);color:var(--text2); }
+  .mn-tbl tr:hover td { background:var(--row-hover); }
+  .mn-kw-grid { display:flex;flex-wrap:wrap;gap:4px;margin-top:5px; }
+  .mn-kw { font-size:11px;padding:3px 9px;background:var(--hdr-bg1);border:1px solid var(--hdr-border);color:var(--blue);border-radius:2px;cursor:pointer;touch-action:manipulation; }
+  .mn-kw:active { background:var(--blue);color:#fff; }
+  .mn-check { padding:3px 0;font-size:11px;border-bottom:1px solid var(--border2);color:var(--text2); }
+  .mn-check:last-child { border-bottom:none; }
+  .mn-faq-q { background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--blue);padding:6px 10px;font-weight:700;font-size:11px;color:var(--text);border-radius:2px 2px 0 0; }
+  .mn-faq-a { background:var(--bg2);border:1px solid var(--border);border-top:none;padding:6px 10px 6px 16px;font-size:11px;color:var(--text2);border-radius:0 0 2px 2px;margin-bottom:6px; }
+  .mn-badge { display:inline-block;font-size:9px;font-weight:700;padding:1px 5px;border-radius:2px;border:1px solid;vertical-align:middle;margin-left:4px; }
 </style>
 </head>
 <body>
@@ -136,9 +166,10 @@
     <span class="hdr-logo" style="background:var(--blue);">EM</span>
     <span class="hdr-title">ER Mate</span>
     <!-- === 버전 === -->
-    <span class="hdr-sub">v2.4 | 2026.02.26</span> 
+    <span class="hdr-sub">v2.5 | 2026.02.27</span>
   </div>
   <div class="hdr-right">
+    <button class="btn-theme" onclick="showManual()" title="사용설명서" style="font-size:13px;">❓</button>
     <button class="btn-theme" id="btnTheme" onclick="toggleTheme()">☀️</button>
     <button class="btn-new" id="btnReset" onclick="resetAll()">새로고침</button>
   </div>
@@ -191,6 +222,24 @@ Enter = 실행 / Shift+Enter = 줄바꿈"
     </div>
   </div>
 </main>
+
+<!-- 사용설명서 모달 -->
+<div id="manOverlay" class="man-overlay hidden" onclick="if(event.target===this)closeManual()">
+  <div class="man-modal">
+    <div class="man-hdr">
+      <span class="man-hdr-title">📖 ER Mate 사용설명서</span>
+      <button class="man-close" onclick="closeManual()">✕ 닫기</button>
+    </div>
+    <div class="man-tabs" id="manTabs">
+      <div class="man-tab on" onclick="manTab(0)">시작하기</div>
+      <div class="man-tab" onclick="manTab(1)">시술 DB</div>
+      <div class="man-tab" onclick="manTab(2)">가이드 DB</div>
+      <div class="man-tab" onclick="manTab(3)">체크리스트</div>
+      <div class="man-tab" onclick="manTab(4)">FAQ</div>
+    </div>
+    <div class="man-body" id="manBody"></div>
+  </div>
+</div>
 
 <script>
 // ==========================================
@@ -1465,6 +1514,7 @@ window.onload = function() {
       document.body.classList.add('light');
       document.getElementById('btnTheme').textContent = '🌙';
     }
+
     // 분석 실행 버튼
     const btnGen = document.getElementById("btnGen");
     if(btnGen){
@@ -1491,6 +1541,117 @@ window.onload = function() {
         });
     }
 };
+// ── 사용설명서 모달 ──
+let _manTab = 0;
+function showManual(){ document.getElementById('manOverlay').classList.remove('hidden'); manTab(_manTab); }
+function closeManual(){ document.getElementById('manOverlay').classList.add('hidden'); }
+function manTab(i){
+  _manTab = i;
+  document.querySelectorAll('.man-tab').forEach((t,n)=>t.classList.toggle('on',n===i));
+  const fns=[_manHome,_manProc,_manGuide,_manCl,_manFaq];
+  document.getElementById('manBody').innerHTML = fns[i]();
+}
+function _useKw(kw){ closeManual(); document.getElementById('inputText').value=kw; generate(kw); }
+
+function _manHome(){ return `
+<div class="mn-sec">
+  <div class="mn-title">⚡ 3가지 사용 모드</div>
+  <div class="mn-card">
+    <div class="mn-card-title">🔍 검색 모드 <span class="mn-badge" style="color:var(--blue);border-color:var(--blue)">20자 미만</span></div>
+    <div class="mn-card-sub">시술명 또는 업무 키워드 입력 → 지침 즉시 조회<br><span style="color:var(--text3)">예: ERCP, PTBD, 수혈, CIV, 고칼륨, Night업무</span></div>
+  </div>
+  <div class="mn-card">
+    <div class="mn-card-title">📋 분석 모드 <span class="mn-badge" style="color:var(--green);border-color:var(--green)">20자 이상</span></div>
+    <div class="mn-card-sub">퇴원기록 전체 붙여넣기 → 퇴실 체크리스트 자동생성<br><span style="color:var(--text3)">복사범위: <b>입원경과 ~ 퇴원장소</b>까지 드래그</span></div>
+  </div>
+  <div class="mn-card">
+    <div class="mn-card-title">🏥 타과회신 모드</div>
+    <div class="mn-card-sub">'타과회신'으로 시작하는 텍스트 → 과별 지시 자동 추출<br><span style="color:var(--text3)">여러 과 회신이 붙어있어도 블록별 자동 분리</span></div>
+  </div>
+</div>
+<div class="mn-sec">
+  <div class="mn-title">⌨️ 단축키</div>
+  <table class="mn-tbl">
+    <tr><th>입력</th><th>동작</th></tr>
+    <tr><td><b>Enter</b></td><td>분석 즉시 실행</td></tr>
+    <tr><td><b>Shift+Enter</b></td><td>줄바꿈</td></tr>
+    <tr><td><b>❓ 버튼</b></td><td>이 설명서 열기</td></tr>
+    <tr><td><b>☀️ / 🌙</b></td><td>다크/라이트 테마 전환 (저장됨)</td></tr>
+  </table>
+</div>
+<div class="mn-tip">📋 <b>복사 팁:</b> 진료기록조회 → <b>입원경과 ~ 퇴원장소</b>까지 전체 드래그 후 붙여넣기</div>`; }
+
+function _manProc(){ 
+  const groups=[
+    {l:"내시경",kws:["ERCP","EGD","CFS","SFS","PEG"]},
+    {l:"영상",kws:["CT","MRI","Echo","EEG","홀터"]},
+    {l:"심장",kws:["CAG","Cardioversion","Pacemaker"]},
+    {l:"배액/천자",kws:["PCD","PTBD","PCN","PTGBD","복수천자","흉수천자","요추천자"]},
+    {l:"혈관조영",kws:["BAE","Embolization","C-line","DJstent"]},
+    {l:"기타",kws:["수혈","OP","PCC","Stroke"]},
+  ];
+  let h=`<div class="mn-sec"><div class="mn-title">📘 시술 DB — 탭하면 바로 조회</div>`;
+  groups.forEach(g=>{
+    h+=`<div class="mn-card"><div class="mn-card-title">${g.l}</div><div class="mn-kw-grid">`;
+    g.kws.forEach(k=>{ h+=`<span class="mn-kw" onclick="_useKw('${k}')">${k}</span>`; });
+    h+=`</div></div>`;
+  });
+  h+=`</div><div class="mn-warn">⚠️ 컨설트·퇴원기록 분석 모드에서는 시술 자동매칭 비활성화.<br>시술 지침은 키워드 단독 검색으로 사용하세요.</div>`;
+  return h;
+}
+
+function _manGuide(){
+  const groups=[
+    {l:"🏥 유닛",kws:["ICU","CCU","Stroke","LICU"]},
+    {l:"💊 투약·처치",kws:["수혈","CIV","고칼륨","mix금기","투약속도","TDM","ACTH","투석","heparin","dalteparin","terlipressin","statin","steroid","lasix","Grasin","Anti투약"]},
+    {l:"📝 간호기록",kws:["간호기록","간호진단","I/O","드레싱주기"]},
+    {l:"🔧 업무절차",kws:["신환접수","약반납","마약반납","접수취소","이송","enema","A-line","chemoport"]},
+    {l:"⚡ 응급/스케줄",kws:["chest tube","post seizure","파상풍","Day업무","Night업무","NA업무","call업무"]},
+  ];
+  let h=`<div class="mn-sec"><div class="mn-title">📖 업무 가이드 DB — 탭하면 바로 조회</div>`;
+  groups.forEach(g=>{
+    h+=`<div class="mn-card"><div class="mn-card-title">${g.l}</div><div class="mn-kw-grid">`;
+    g.kws.forEach(k=>{ h+=`<span class="mn-kw" onclick="_useKw('${k}')">${k}</span>`; });
+    h+=`</div></div>`;
+  });
+  return h+`</div>`;
+}
+
+function _manCl(){ return `
+<div class="mn-sec">
+  <div class="mn-title">🏠 퇴원 필수</div>
+  ${["퇴원약 확인 (정규:응급약국 직접수령 / 비정규:기송관or보조원SMS)","남은약 반납 (반납용지+약→소독물실+60삐록)","Line 제거","퇴원간호기록지 전달 (수납)","응급실퇴실간호기록","침상정리 (#59삐록)"].map(i=>`<div class="mn-check">☐ ${i}</div>`).join('')}
+</div>
+<div class="mn-sec">
+  <div class="mn-title">🏥 입원 필수</div>
+  ${["입원지시 확인 (내과→EMO / 외과→진료과직접)","병실배정 (병동전화→자리+수속+인계시간)","입원수속 안내","약 반납 확인","전과전동기록지 (인계 전 올려놓기)","인계 (검체·pen insulin 등, 수혈 남으면 병동알리기)","이송등록 (퇴실 전 미리!)","응급실퇴실간호기록","침상정리"].map(i=>`<div class="mn-check">☐ ${i}</div>`).join('')}
+</div>
+<div class="mn-sec">
+  <div class="mn-title">🚑 전원 필수</div>
+  ${["전원동의서 (주치의 및 각 과)","전원소견서 / 의무기록복사","CD/DVD복사 (비정규:PACS실 82)3077)","전원회신 확인","구급차 안내 (사설 기본 8만원 / 채혈실 #0896)","퇴실 30분 전 V/S","외래예약 확인","응급실퇴실간호기록 & 이름빼기","침상정리"].map(i=>`<div class="mn-check">☐ ${i}</div>`).join('')}
+</div>
+<div class="mn-sec">
+  <div class="mn-title">🏨 특수유닛 동의서</div>
+  <table class="mn-tbl">
+    <tr><th>유닛</th><th>동의서/안내</th></tr>
+    <tr><td>ICU</td><td>중환자실입실동의서</td></tr>
+    <tr><td>CCU</td><td>심혈관내과중환자실 입실동의서</td></tr>
+    <tr><td>Stroke</td><td>뇌졸중집중치료실동의서 / 보호자 24hr 상주 ☏0309</td></tr>
+    <tr><td>LICU</td><td>간집중치료실동의서 / 24hr 상주 / 114병동 ☏2670</td></tr>
+  </table>
+</div>`; }
+
+function _manFaq(){ return `
+<div class="mn-sec"><div class="mn-title">❓ 자주 묻는 질문</div>
+${[
+  ["분석이 이상하게 나와요","원문보기/수정 패널에서 수정 후 '다시생성' 클릭. 복사 범위를 입원경과~퇴원장소로 재확인하세요."],
+  ["시술이 체크리스트에 안 잡혀요","컨설트·퇴원기록 모드에서는 시술 자동매칭이 비활성화됩니다. 시술명만 따로 검색하세요."],
+  ["모바일에서 버튼을 눌러도 반응이 없어요","입력창을 한 번 탭해서 키보드를 닫은 다음, ⚡ 버튼을 다시 눌러보세요."],
+  ["껐다 켜면 다크/라이트 설정이 초기화돼요","카카오톡 인앱 브라우저나 시크릿 탭에서 열면 설정이 저장되지 않습니다. 사파리나 크롬으로 직접 열어주세요."],
+  ["검체 DB는 어디 있어요?","현재 개발 중입니다. 추후 업데이트 예정입니다."],
+].map(([q,a])=>`<div class="mn-faq-q">Q. ${q}</div><div class="mn-faq-a">A. ${a}</div>`).join('')}
+</div>`; }
+
 </script>
 </body>
 </html>
