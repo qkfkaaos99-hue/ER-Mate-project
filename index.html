@@ -341,7 +341,7 @@ const PROCEDURE_DB = {
     important: false,
   },
   "Embolization": {
-    keywords: /\bEMBO\b|출혈환자색전술|에멀/i,
+    keywords: /\bEMBO\b|embolization|출혈환자색전술|에멀/i,
     prep: ["출혈환자 색전술 동의서", "Skin prep (사타구니) → DPP → Sandbag", "Foley 여부 확인"],
     med: [],
     post: ["검사 후 4~8hr ABR(절대안정)","천자부위봉합기 사용시 1~2hr ABR(절대안정)"],
@@ -413,7 +413,7 @@ const PROCEDURE_DB = {
     important: false,
   },
   "DJstent": {
-    keywords: /\bDJ\b|DJ stent|요관부목|요관스텐트/i,
+    keywords: /\bDJ\b|DJstent|DJ stent|요관부목|요관스텐트/i,
     prep: ["역행성 신우 조영술 동의서 + 요관 부목 설치술 동의서","NPO 4시간","IV 확보 (Gauge 상관없음)","하의 속옷 탈의","On call 진통제 pethidine 또는 fentanyl mixed clamping"],
     med: [],
     post: ["V/S check","2hr ABR & supine — vasovagal syncope 위험 높음","소변 배출 관찰"],
@@ -842,7 +842,7 @@ const GUIDE_DB = {
     ]
   },
   "steroid": {
-    keywords: /dexamethasone|덱사|스테로이드.*로딩|steroid.*loading/i,
+    keywords: /dexamethasone|덱사|스테로이드|steroid|steroid.*loading/i,
     icon: "💊",
     items: [
       {cat:"투약",txt:"Dexamethasone 10mg loading + 4mg/ml 유지"},
@@ -869,7 +869,7 @@ const GUIDE_DB = {
     keywords: /chemoport.*culture|케모포트.*배양|포트.*culture/i,
     icon: "🧫",
     items: [
-      {cat:"준비",txt:"Chemoport needle: 3구역 모니터링 넣는 곳에 있음"},
+      {cat:"준비",txt:"Chemoport needle: 투약실 t cannular 넣는 곳에 있음"},
       {cat:"주의",txt:"주임쌤한테 쓴다고 말하기 (주임쌤이 카운트)"},
       {cat:"오더",txt:"Blood culture [central catheter, 혈액] — chemoport"},
       {cat:"오더",txt:"Heparin 1:100 희석 오더 받아서 드리기"},
@@ -886,7 +886,7 @@ const GUIDE_DB = {
     ]
   },
   "Night업무": {
-    keywords: /night.*job|나이트.*업무|야간.*업무|당일.*스케줄링/i,
+    keywords: /night.*job|night.*업무|나이트.*업무|야간.*업무|당일.*스케줄링/i,
     icon: "🌙",
     items: [
       {cat:"스케줄링",txt:"당일 스케줄링: 전날과 비교하여 M/F, anti 등 약 확인"},
@@ -898,7 +898,7 @@ const GUIDE_DB = {
     ]
   },
   "Day업무": {
-    keywords: /day.*job|데이.*업무|주간.*업무|eve.*job|이브.*업무/i,
+    keywords: /day.*job|day.*업무|데이.*업무|주간.*업무|eve.*job|이브.*업무/i,
     icon: "☀️",
     items: [
       {cat:"업무",txt:"스케줄링 된 라벨 확인, 라운딩 후 정규 차팅"},
@@ -1693,10 +1693,10 @@ function _manProc(){
 
 function _manGuide(){
   const groups=[
-    {l:"🏥 유닛",kws:["ICU","CCU","Stroke","LICU"]},
+    {l:"🏥 유닛",kws:["ICU","CCU","Stroke Unit","LICU"]},
     {l:"💊 투약·처치",kws:["수혈","CIV","고칼륨","mix금기","투약속도","TDM","ACTH","투석","heparin","dalteparin","terlipressin","statin","steroid","lasix","Grasin","Anti투약"]},
     {l:"📝 간호기록",kws:["간호기록","간호진단","I/O","드레싱주기"]},
-    {l:"🔧 업무절차",kws:["신환접수","약반납","마약반납","접수취소","이송","enema","A-line","chemoport"]},
+    {l:"🔧 업무절차",kws:["신환접수","약반납","마약반납","접수취소","이송","enema","A-line","케모포트배양"]},
     {l:"⚡ 응급/스케줄",kws:["chest tube","post seizure","파상풍","Day업무","Night업무","NA업무","call업무"]},
   ];
   let h=`<div class="mn-sec"><div class="mn-title">📖 업무 가이드 DB — 탭하면 바로 조회</div>`;
