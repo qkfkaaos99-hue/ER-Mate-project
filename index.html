@@ -1463,8 +1463,8 @@ function regen(){ const ta=document.querySelector("#resultScreen textarea"); if(
 window.onload = function() {
     if(localStorage.getItem('theme')==='light'){
       document.body.classList.add('light');
-      document.getElementById('btnTheme').textContent = '🌙'; // ← 추가
-
+      document.getElementById('btnTheme').textContent = '🌙';
+    }
     // 분석 실행 버튼
     const btnGen = document.getElementById("btnGen");
     if(btnGen){
