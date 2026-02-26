@@ -943,7 +943,7 @@ if(!r.disposition){if(["전원","transfer","이송"].some(k=>t.includes(k)))r.di
 
 // --- 진료과 ---
 const dm={"IMR":["IMR","RESP","PULM","호흡기","호흡기내과","펄모","풀모"],"IMJ":["IMJ","RHEU","RH","류마","류마티스","류마티스내과","조인트"],"IMN":["IMN","NEPH","신장","신장내과","네프로","RENAL"],"IMHO":["IMHO","HEM","ONCO","HO","혈종","혈액종양","혈액종양내과","헴","옹코"],"IMI":["IMI","INFEC","IF","감내","감염","감염내과","인펙"],"IMG":["IMG","GI","GASTRO","소화기","소화기내과","위장관"],"IMC":["IMC","CV","CARD","CIRC","순환기","심장","심장내과","카디오"],"IME":["IME","ENDO","META","내분비","내분비내과","내분비대사","엔도"],"IMA":["IMA","ALLERGY","ALL","알레르기","알러지"],"IMHM":["IMHM","입전","입전의","입원전담","입원전담전문의"],"NP":["NP","PSY","정신","정신과","정신건강의학과","엔피"],"NR":["NR","NU","NEURO","신경과","뉴로","엔알"],"NS":["NS","N/S","NEUROSURG","신경외과","엔에스","SPINE","BRAIN"],"GS":["GS","SURG","외과","일반외과","쥐에스","HBP","UGI","LGI"],"CS":["CS","TS","THORACIC","흉부","흉부외과","흉외"],"OS":["OS","ORTHO","정형","정형외과","오에스","BONE"],"EM":["EM","ER","응급","응급의학과"],"PED":["PED","소아","소청과","페드"],"OBGY":["OBGY","산부인과","산과","부인과"],"URO":["URO","비뇨","비뇨의학과","유로"],"ENT":["ENT","OTO","이비인후과","이엔티"],"RM":["RM","REHAB","재활","재활의학과","알엠"]};
-const shortDepts=new Set(["NR","NS","GS","CS","OS","NP","EM","RM","IF","GI","CV","HO","NU","RH"]);
+const shortDepts=new Set(["NR","NS","GS","CS","OS","NP","EM","RM","IF","GI","CV","HO","NU","RH","UGI","LGI","HBP"]);
 for(const[d,ks]of Object.entries(dm))for(const k of ks){
   if(k.length<=2 || shortDepts.has(k)){
     const re=new RegExp("\\b"+k+"\\b","i");
