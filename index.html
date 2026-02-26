@@ -136,7 +136,7 @@
     <span class="hdr-logo" style="background:var(--blue);">EM</span>
     <span class="hdr-title">ER Mate</span>
     <!-- === 버전 === -->
-    <span class="hdr-sub">v2.3 | 2026.02.25</span> 
+    <span class="hdr-sub">v2.4 | 2026.02.26</span> 
   </div>
   <div class="hdr-right">
     <button class="btn-theme" id="btnTheme" onclick="toggleTheme()">☀️</button>
@@ -276,7 +276,7 @@ const PROCEDURE_DB = {
   "CAG": {
     keywords: /\bCAG\b|심도자|관상동맥조영/i,
     prep: ["심도자술 동의서 (봉합기 포함)", "CCU vs 병동 확인 — CCU면 입실동의서 추가", "Skin prep (사타구니) → DPP → Sandbag"],
-    med: [],
+    med: ["DAPT 로딩: Aspirin Protect 100mg 3T + Pidogul(Clopidogrel) 75mg 8T + Statin(Lipitor or Vivacor) + 위장약(PPI) — 4가지 P.O 확인","기존에 Aspirin 이나 clopidogrel 복용하던사람은 각각 1tab만 복용(주치의확인 추천)"],
     post: [],
     warning: [],
     transfer: ["심혈관조영실 (☏2677)","위급상황아니면 S-CAR로 바꿔서 이송"],
@@ -885,9 +885,12 @@ const t=text;
 const r={disposition:null,departments:[],unit:null,procedures:[],opdItems:[],educationItems:[],npo:false,op:false,conditionalTasks:[],instructions:[],hasTransfusion:false};
 
 // --- Disposition ---
+const _isConsultReplyEarly = /^타과회신/m.test(t);
+if(!_isConsultReplyEarly){
 const rsm=t.match(/입원결과[^\n]*\n([^\n]*)/);
 if(rsm){const rl=rsm[1];if(/전원|transfer/.test(rl))r.disposition="transfer";else if(/퇴원|D\/C|d\/c|discharge|귀가/.test(rl))r.disposition="discharge";else if(/입원|adm/i.test(rl))r.disposition="admission";}
 if(!r.disposition){if(["전원","transfer","이송"].some(k=>t.includes(k)))r.disposition="transfer";else if(/퇴원|D\/C|d\/c|discharge|귀가/.test(t))r.disposition="discharge";else if(/\badm\b/i.test(t))r.disposition="admission";}
+}
 
 // --- 진료과 ---
 const dm={"IMR":["IMR","RESP","PULM","호흡기","호흡기내과","펄모","풀모"],"IMJ":["IMJ","RHEU","RH","류마","류마티스","류마티스내과","조인트"],"IMN":["IMN","NEPH","신장","신장내과","네프로","RENAL"],"IMHO":["IMHO","HEM","ONCO","HO","혈종","혈액종양","혈액종양내과","헴","옹코"],"IMI":["IMI","INFEC","IF","감내","감염","감염내과","인펙"],"IMG":["IMG","GI","GASTRO","소화기","소화기내과","위장관"],"IMC":["IMC","CV","CARD","CIRC","순환기","심장","심장내과","카디오"],"IME":["IME","ENDO","META","내분비","내분비내과","내분비대사","엔도"],"IMA":["IMA","ALLERGY","ALL","알레르기","알러지"],"IMHM":["IMHM","입전","입전의","입원전담","입원전담전문의"],"NP":["NP","PSY","정신","정신과","정신건강의학과","엔피"],"NR":["NR","NU","NEURO","신경과","뉴로","엔알"],"NS":["NS","N/S","NEUROSURG","신경외과","엔에스","SPINE","BRAIN"],"GS":["GS","SURG","외과","일반외과","쥐에스","HBP","UGI","LGI"],"CS":["CS","TS","THORACIC","흉부","흉부외과","흉외"],"OS":["OS","ORTHO","정형","정형외과","오에스","BONE"],"EM":["EM","ER","응급","응급의학과"],"PED":["PED","소아","소청과","페드"],"OBGY":["OBGY","산부인과","산과","부인과"],"URO":["URO","비뇨","비뇨의학과","유로"],"ENT":["ENT","OTO","이비인후과","이엔티"],"RM":["RM","REHAB","재활","재활의학과","알엠"]};
@@ -915,10 +918,23 @@ else if (/ICU|중환자실/i.test(t)) {
     r.unit = "ICU";
 }
 
-// --- 컨설트 포맷 판별 (시술 매칭 스킵용) ---
-const isConsultFormat = /회신|상세내용|입원치료.*필요|종합.*소견|Recommendation|계획\s*및\s*권고|타과회신|구분:\s*타과|회신\s*개요|평가\s*\(A\)|계획\s*\(P\)|권고사항|회신자|진료과:\s*(순환기|신경|호흡기|소화기|감염|신장|혈액|정형|흉부|신경외)/i.test(t);
+// --- 포맷 판별 (3분기: 퇴원기록 / 타과회신 / 일반) ---
+const isDischargeSummary = /^입원경과/m.test(t);
+const isConsultReply = /^타과회신/m.test(t);
+const isConsultFormat = isDischargeSummary || isConsultReply;
 
-// --- 검사/시술: PROCEDURE_DB 키워드 매칭 (컨설트 회신에서는 스킵) ---
+// --- 퇴원기록 전용 disposition 보정 ---
+if (isDischargeSummary) {
+  const dispoMatch = t.match(/퇴원장소\s*\n?\s*(.+)/);
+  if (dispoMatch) {
+    const loc = dispoMatch[1].trim();
+    if (/전원|타병원|타원|요양|재활병원/.test(loc)) r.disposition = "transfer";
+    else r.disposition = "discharge";
+  }
+  if (!r.disposition) r.disposition = "discharge";
+}
+
+// --- 검사/시술: PROCEDURE_DB 키워드 매칭 (컨설트에서는 스킵) ---
 if(!isConsultFormat){
 const actionKw=/시행\s*예정|시행\s*함|시행\s*하|예정|준비\s*해|콜\s*해|call\s*해|내일|모레|1st|2nd|go\s*예정|schedule/i;
 const imagingActionKw=/시행|예정|찍|보내|촬영|예약|콜|call|준비|go|schedule/i;
@@ -991,154 +1007,150 @@ if(!isConsultFormat && /진단서|소견서/.test(t))r.conditionalTasks.push({id
 // --- 수혈 ---
 r.hasTransfusion=(/수혈|transfusion|RBC|FFP|pheresis|PLT Tf|plt tf/i.test(t));
 
-// --- 컨설트 회신 파싱 (과별 핵심 요약) ---
+// ============================================================
+// [3분기 파싱] 타과회신 / 퇴원기록 / 일반
+// ============================================================
 
-if(isConsultFormat){
-  // 과별 회신 블록 분리 — 다양한 헤더 패턴
-  const blocks = t.split(/(?=\d+\.\s*.+?(?:회신|센터|Recommendation)\s*[\(\[])/).filter(b=>b.trim());
-  // 분리 안 되면 전체를 1블록으로
-  const finalBlocks = blocks.length > 0 ? blocks : [t];
+// --- 과명→약어 매핑 (공용) ---
+const deptAbbrMap = {"비뇨의학과":"URO","비뇨기과":"URO","종양내과":"IMHO","혈액종양내과":"IMHO","혈액종양":"IMHO","신경과":"NR","신경외과":"NS","호흡기내과":"IMR","소화기내과":"IMG","순환기내과":"IMC","심장내과":"IMC","정형외과":"OS","흉부외과":"CS","재활의학과":"RM","정신건강의학과":"NP","감염내과":"IMI","신장내과":"IMN","내분비내과":"IME","내분비대사내과":"IME","류마티스내과":"IMJ","알레르기내과":"IMA","일반외과":"GS","외과":"GS","완화의료":"완화의료","임상윤리":"완화의료","호스피스":"완화의료","피부과":"DERM","안과":"EYE","이비인후과":"ENT","산부인과":"OBGY","응급의학과":"EM"};
+
+if (isConsultReply) {
+  // ========== 타과회신 파싱 ==========
+  // 여러 건이 붙어올 수 있으므로 "타과회신" 기준으로 블록 분리
+  const cstBlocks = t.split(/(?=^타과회신)/m).filter(b => /^타과회신/m.test(b));
   
-  for(let bi=0; bi<finalBlocks.length; bi++){
-    const block = finalBlocks[bi];
-    if(!block.trim() || block.trim().length < 20) continue;
+  cstBlocks.forEach((block, bi) => {
+    const lines = block.split(/\n/);
     
-    // 회신과 식별 — 1) 첫 줄에서 과명, 2) 본문에서 "IMR F." 같은 서명, 3) 약어
-    let dept = "";
-  const firstLine = block.split(/\n/)[0];
-  const deptLineMatch = block.match(/진료과\s*:\s*([^\n\r]+)/);
-  const searchLine = deptLineMatch ? deptLineMatch[1] : firstLine;
-  const deptMatch = searchLine.match(/(완화의료|임상윤리|호스피스|비뇨의학과|비뇨기과|종양내과|혈액종양내과|혈액종양|신경과|신경외과|호흡기내과|소화기내과|순환기내과|심장내과|정형외과|흉부외과|재활의학과|정신건강|감염내과|신장내과|내분비내과|내분비|류마티스|알레르기|일반외과|외과|응급의학과|피부과|안과|이비인후과|산부인과)/);
-    if(deptMatch) dept = deptMatch[1];
-    // 약어 — 첫 줄에서
-    if(!dept){
-      const abbr = firstLine.match(/\b(URO|GS|NS|NR|CS|OS|IMG|IMC|IMR|IMI|IMN|IME|IMJ|IMA|IMHO|NP|RM|PED|OBGY|ENT|EM)\b/i);
-      if(abbr) dept = abbr[1].toUpperCase();
+    // 1) 진료과 식별: "타과회신" 바로 다음 줄
+    let cstDept = "";
+    for (let i = 0; i < lines.length; i++) {
+      if (/^타과회신/.test(lines[i].trim()) && i + 1 < lines.length) {
+        cstDept = lines[i + 1].trim();
+        break;
+      }
     }
-    // 본문 서명에서 과 식별: "IMR F.", "내과 2년차", "GS R2" 등
-    if(!dept){
+    let cstDeptCode = deptAbbrMap[cstDept] || cstDept;
+    
+    // 과명 못 찾으면 본문에서 서명 패턴으로 재시도
+    if (!cstDeptCode || cstDeptCode.length > 10) {
       const sigMatch = block.match(/\b(URO|GS|NS|NR|CS|OS|IMG|IMC|IMR|IMI|IMN|IME|IMJ|IMA|IMHO|NP|RM|PED|OBGY|ENT|EM)\s*(?:F\.|R\d|교수|올림|배상)/i);
-      if(sigMatch) dept = sigMatch[1].toUpperCase();
-    }
-    // 한글 과명에서 서명 추출: "내과 2년차", "호흡기내과 F."
-    if(!dept){
-      const korSig = block.match(/(호흡기내과|소화기내과|순환기내과|감염내과|신장내과|혈액종양내과|종양내과|신경과|신경외과|정형외과|흉부외과|외과|비뇨의학과)\s*(?:F\.|R\d|교수|올림|전임의|전공의)/i);
-      if(korSig) dept = korSig[1];
-    }
-    // 과 이름에서 약어로
-    const deptAbbrMap = {"비뇨의학과":"URO","비뇨기과":"URO","종양내과":"IMHO","혈액종양내과":"IMHO","혈액종양":"IMHO","신경과":"NR","신경외과":"NS","호흡기내과":"IMR","소화기내과":"IMG","순환기내과":"IMC","심장내과":"IMC","정형외과":"OS","흉부외과":"CS","재활의학과":"RM","정신건강":"NP","감염내과":"IMI","신장내과":"IMN","내분비내과":"IME","내분비":"IME","류마티스":"IMJ","알레르기":"IMA","일반외과":"GS","외과":"GS","완화의료":"완화의료","임상윤리":"완화의료","호스피스":"완화의료","피부과":"DERM","안과":"EYE","이비인후과":"ENT","산부인과":"OBGY"};
-    const deptCode = deptAbbrMap[dept] || dept;
-    if(!deptCode) continue;
-    
-    // 상세내용 추출 — 다양한 헤더 패턴 지원
-    let detailText = "";
-    // 1순위: "계획 및 권고" 섹션
-    const planMatch = block.match(/계획\s*및\s*권고\s*(?:\(P\))?\s*\n([\s\S]*?)(?=행정\s*사항|회신자\s*:|$)/i);
-    if(planMatch) {
-      detailText = planMatch[1];
-    } else {
-      // 2순위: 기존 헤더 패턴
-      const detailMatch = block.match(/(?:상세내용|회신내용\s*요약|종합\s*소견|Opinion|Recommendation\s*>?)\s*[:\s]*([\s\S]*?)(?=입원치료|행정\s*사항|회신자|$)/i);
-      if(detailMatch){
-        detailText = detailMatch[0];
-      } else {
-        const hwMatch = block.match(/회신내용[\s\S]*?(?=입원치료|$)/i);
-        if(hwMatch) detailText = hwMatch[0];
-        else detailText = block.split(/\n/).slice(1).join('\n');
+      if (sigMatch) cstDeptCode = sigMatch[1].toUpperCase();
+      else {
+        const korSig = block.match(/(호흡기내과|소화기내과|순환기내과|감염내과|신장내과|혈액종양내과|종양내과|신경과|신경외과|정형외과|흉부외과|외과|비뇨의학과)\s*(?:F\.|R\d|교수|올림|전임의|전공의)/i);
+        if (korSig) cstDeptCode = deptAbbrMap[korSig[1]] || korSig[1];
       }
     }
-    if(detailText.length < 10) continue;
+    if (!cstDeptCode) return;
     
-    // 노이즈 제거 패턴
-    const noiseKw = /선생님|안녕하십니까|배상$|감사합니다|회신내용|상세내용|환자진료시각|의뢰의|작성시간|최종작성자|종합\s*소견|Opinion|^\s*[\*\-]\s*$|초음파\s*소견\s*비교|호흡부전\s*원인|위험성:|권고사항:|객관적\s*소견|평가\s*\(A\)|V\/S:|Lab:|ABGA:|Bedside/;
-    const dateOnly = /^\s*\d{4}-\d{2}-\d{2}/;
-    const bgInfo = /확인되었던 환자|환자입니다$|환자분입니다|내원하신|진료의뢰|진단명|Diagnosis|과거력:|초기 진단 시에도|의뢰 사유:|기저질환/;
-    const diagLine = /^\d+\.\s*[A-Z].*(?:stage|s\/p|Fx|HTN|cancer|DLBL|effusion|impairment)/i;
+    // 2) P섹션 추출: Recommendation> / Opinion> / Plan / P> / 계획 및 권고
+    let pSection = "";
+    const pMatch = block.match(/(?:Recommendation\s*>?|Opinion\s*>?|Plan\s*>?|\bP\s*>|계획\s*(?:및\s*)?권고)\s*\n?([\s\S]*?)(?=입원치료\s*필요|추적관찰|회신자|협진\s*총\s*소요|$)/i);
+    if (pMatch) {
+      pSection = pMatch[1].trim();
+    }
+    // P섹션 못 찾으면 "회신내용" 이후 전체에서 추출 시도
+    if (!pSection || pSection.length < 10) {
+      const hwMatch = block.match(/회신내용[\s\S]*?(?=입원치료\s*필요|추적관찰|$)/i);
+      if (hwMatch) pSection = hwMatch[0];
+    }
+    if (!pSection || pSection.length < 10) return;
     
-    // 핵심 문장 추출 — 의학 약어(G.C, s/p, r/o, Lt., Rt., op., Pf.)의 마침표는 보존
-    const safeDetail = detailText.replace(/\b([A-Za-z])\.([A-Za-z])/g, '$1\u00B7$2').replace(/\b(s\/p|r\/o|op|Lt|Rt|Pf|Dr)\./gi, '$1\u00B7');
-    // 문장 분리: 마침표, 줄바꿈, 또는 "~분으로," "~없어" 같은 접속 패턴
-    const sentences = safeDetail.split(/\.\s|\n|(?<=.{30}),\s*(?=현재|해당|입원|가능|호스피스|다만|추가)/).map(s=>s.replace(/\u00B7/g,'.').replace(/^\s*[\*\-\d\.\)]\s*/,'').trim()).filter(s=>{
-      if(s.length < 8) return false;
-      if(noiseKw.test(s)) return false;
-      if(dateOnly.test(s) && s.length < 15) return false;
-      if(/^\s*(?:상세내용|회신내용|종합\s*소견)\s*:?\s*$/i.test(s)) return false;
-      if(bgInfo.test(s)) return false;
-      if(diagLine.test(s)) return false;
-      return true;
-    });
+    // 3) 노이즈 제거 + 문장 분리
+    const noiseRe = /선생님|안녕하세요|안녕하십니까|감사합니다|드림$|올림$|배상$|의뢰주셔서|^\s*[\*\-]\s*$/;
+    const sigRe = /\b[A-Z]{2,4}\s*(?:F\.|R\d|교수|올림|전임의|전공의)[\s\S]{0,20}(?:드림|올림|배상)?/i;
+    const metaRe = /^회신내용$|^환자진료시각|^\d{4}-\d{2}-\d{2}\s+\d{2}:|^[SOA]\s*>|^Recommendation\s*>|^Opinion|^Plan/i;
+    const labRe = /^[A-Z][A-Za-z\/\(\)]+\s+[\d\.]+$|^BUN\s|^Creatinine\s|^eGFR|^Na\(U\)|^CRP\s|^WBC\s|^Hb\s/;
+    const dxRe = /^[A-Z]>$|^#\d|^A>$|^O>$|^S>$/;
     
-    // 핵심 키워드 기반 요약 (행동 가능한 것 우선)
-    const highPriority = [];
-    const actionSentences = [];
-    const infoSentences = [];
+    // 의학 약어 마침표 보존
+    let safe = pSection
+      .replace(/\b([A-Za-z])\.([A-Za-z])/g, '$1\u00B7$2')
+      .replace(/\b(s\/p|r\/o|op|Lt|Rt|Pf|Dr)\./gi, '$1\u00B7');
     
-    sentences.forEach(s => {
-      // 최우선: 호스피스/전원/연명/서류 관련
-      if(/호스피스|hospice|전원|연명.*불원|서류.*작성|상담.*완료|POLST|polst|DNR|dnr|사전연명/i.test(s)){
-        highPriority.push(s);
-      }
-      else if(/입원|퇴원|치료.*계획|chemotherapy|항암.*추천|항암.*불가|수술|시행|투약|중단|유지|의뢰|부탁|추천|권고|필요|외래|f\/u|FU|follow|상의|고려|어려운|어려움|불가|가능|완화|연명|권하지|권유하지|stent|weaning|병상|전환|기대수명|상담|요망|echocardiography|echo|시행\s*요망|확인\s*요망|의뢰\s*요망/i.test(s)){
-        actionSentences.push(s);
-      } else if(/확인|상태|소견|결과|사유|원인|재발|악화/i.test(s)){
-        infoSentences.push(s);
-      }
-    });
+    const sentences = safe
+      .split(/\.\s|\n/)
+      .map(s => s.replace(/\u00B7/g, '.').replace(/^\s*[\*\-\d\.\)]\s*/, '').trim())
+      .filter(s => {
+        if (s.length < 8) return false;
+        if (noiseRe.test(s)) return false;
+        if (sigRe.test(s)) return false;
+        if (metaRe.test(s)) return false;
+        if (labRe.test(s)) return false;
+        if (dxRe.test(s)) return false;
+        return true;
+      });
     
-    // 최대 3개: 최우선 → 행동 → 정보 순서
-    const picked = [];
-    highPriority.forEach(s => { if(picked.length < 3) picked.push(s); });
-    actionSentences.forEach(s => { if(picked.length < 3) picked.push(s); });
-    if(picked.length === 0) infoSentences.forEach(s => { if(picked.length < 1) picked.push(s); });
-    
-    // 입원 필요 여부
-    const admNeeded = /입원치료.*필요.*여부[\s\S]{0,30}예/i.test(block);
-    const transferRec = /타병원.*전원/i.test(block);
-    
-    // disposition 보조 판단
-    if(transferRec && !r.disposition) r.disposition = "transfer";
-    if(admNeeded && !r.disposition) r.disposition = "admission";
-
-    // 입원/전원 정보를 suffix로 병합
-    let suffix = "";
-    if(admNeeded && transferRec) suffix = " → 타병원 전원 추천";
-    else if(admNeeded) suffix = " → 입원치료 필요";
-    else if(transferRec) suffix = " → 타병원 전원 추천";
-    
-    // 카테고리 자동 분류
-    picked.forEach((s, idx) => {
-      let cat = "검사";
-      let icon = "🔬";
-      if(/전원|입원|퇴원|discharge|병상|전과|전동/i.test(s)){ cat="배치"; icon="🏥"; }
-      else if(/호스피스|hospice|완화|연명|권하지|권유하지|임종/i.test(s)){ cat="완화의료"; icon="🕊️"; }
-      else if(/수술.*어려|수술적 치료.*어려|불가/i.test(s)){ cat="소견"; icon="🔪"; }
-      else if(/수술|op |시술|stent|insertion|조치/i.test(s)){ cat="수술/시술"; icon="🔪"; }
-      else if(/chemo|항암/i.test(s)){ cat="항암"; icon="💊"; }
-      else if(/투약|약물|유지|중단|처방|supplement|infusion|투여|적용|CRRT/i.test(s)){ cat="투약"; icon="💊"; }
-      else if(/의뢰|협진|consult|부탁|의견.*확인|재협진|상의/i.test(s)){ cat="협진"; icon="🏥"; }
-      else if(/외래|OPD|f\/u|follow/i.test(s)){ cat="외래"; icon="📅"; }
-      else if(/support|care|nutritional|영양/i.test(s)){ cat="간호"; icon="💉"; }
-      else if(/기대수명|예후|예상/i.test(s)){ cat="예후"; icon="⏳"; }
-      else if(/상담|서류|가족/i.test(s)){ cat="상담"; icon="👥"; }
-      else { cat="소견"; icon="🔬"; }
+    // 4) 카테고리 분류 + 항목 생성 (최대 5줄)
+    sentences.forEach((s, idx) => {
+      if (idx >= 5) return;
+      let cat = "소견", icon = "🔬";
+      if (/(?:전원|병상|전과|전동)/.test(s) && !/하시게되면|하게되면|경우/.test(s)) { cat="배치"; icon="🏥"; }
+      else if (/호스피스|hospice|완화|연명|POLST|DNR/i.test(s)) { cat="완화의료"; icon="🕊️"; }
+      else if (/수술|op |시술|stent|insertion|기관지내시경/i.test(s)) { cat="수술/시술"; icon="🔪"; }
+      else if (/chemo|항암/i.test(s)) { cat="항암"; icon="💊"; }
+      else if (/투약|약물|유지|중단|처방|투여|infusion|CRRT|aspirin|LMWH|supplement/i.test(s)) { cat="투약"; icon="💊"; }
+      else if (/외래|OPD|f\/u|follow|내원/i.test(s)) { cat="외래"; icon="📅"; }
+      else if (/의뢰|협진|consult|부탁|추천드립니다/i.test(s)) { cat="협진"; icon="🏥"; }
+      else if (/검체|culture|시행|채혈|검사|panel|stain|AFB/i.test(s)) { cat="검사"; icon="🔬"; }
       
-      // 마지막 항목에만 suffix 붙이기
-      let detail = s;
-      if(idx === picked.length - 1 && suffix) detail += suffix;
-      if(detail.length > 100) detail = detail.substring(0, 97) + "...";
-      
+      let detail = s.length > 120 ? s.substring(0, 117) + "..." : s;
+      // 외래 카테고리면 opdItems에도 추가
+      if (cat === "외래") r.opdItems.push(detail);
       r.instructions.push({
-        id: "cst_"+bi+"_"+idx,
-        task: deptCode,
+        id: "cst_" + bi + "_" + idx,
+        task: cstDeptCode,
         detail: detail,
         icon: icon,
         category: cat,
         blockIdx: bi
       });
     });
+    
+    // 5) 입원 필요 여부 판별
+    if (/입원치료.*필요.*여부[\s\S]{0,50}아니오/i.test(block)) { /* 입원 불필요 */ }
+    else if (/입원치료.*필요.*여부[\s\S]{0,50}예/i.test(block)) {
+      if (!r.disposition) r.disposition = "admission";
+    }
+    // 타병원 전원 추천
+    if (/타병원.*전원/i.test(block) && !r.disposition) r.disposition = "transfer";
+  });
+
+} else if (isDischargeSummary) {
+  // ========== 퇴원기록 파싱: 향후계획 섹션 추출 ==========
+  const planMatch = t.match(/향후계획\s*\n([\s\S]*?)(?=퇴원장소|$)/i);
+  if (planMatch) {
+    const planLines = planMatch[1].split(/\n/).map(l => l.trim()).filter(l => l.length > 3);
+    planLines.forEach((line, idx) => {
+      if (idx >= 5) return;
+      let cat = "지시", icon = "📋";
+      if (/외래|OPD|f\/u|follow/i.test(line)) { cat = "외래"; icon = "📅"; r.opdItems.push(line); }
+      else if (/교육|재내원|재방문/i.test(line)) { cat = "교육"; icon = "📚"; }
+      else if (/O2|산소|투약|복용|투여|처방/i.test(line)) { cat = "투약"; icon = "💊"; }
+      else if (/검사|촬영|lab|채혈/i.test(line)) { cat = "검사"; icon = "🔬"; }
+      r.instructions.push({
+        id: "dsum_" + idx,
+        task: "향후계획",
+        detail: line,
+        icon: icon,
+        category: cat,
+        blockIdx: 0
+      });
+    });
   }
+  
+  // 입원경과 섹션에서 교육 항목도 추출
+  const courseMatch = t.match(/입원경과\s*\n?([\s\S]*?)(?=입원결과|$)/i);
+  if (courseMatch) {
+    const courseText = courseMatch[1];
+    const eduLines = courseText.split(/[.\n]/).filter(l => /교육함|교육하였|설명함|하시도록|재내원|재방문/.test(l)).map(l => l.trim()).filter(l => l.length > 3);
+    eduLines.forEach((line, idx) => {
+      r.educationItems.push(line);
+    });
+  }
+
 } else {
-  // --- 기존 컨설트 지시사항 추출 (비회신 포맷) ---
+  // ========== 일반 텍스트: 기존 지시사항 추출 ==========
   const lines=t.split(/\n/);
   const instrKw=/유지|추천|권고|시행|중단|변경|감량|증량|추가|제거|시작|지속|투약|투여|처방|협진|consult|의뢰|해주|바랍니다|부탁|드립니다|하십시오|고려/i;
   const skipKw=/^입원경과|^입원결과|^향후계획|^퇴원장소|^진료기록|^\s*$|adm|입원/i;
