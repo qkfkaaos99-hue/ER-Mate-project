@@ -1094,7 +1094,7 @@ if (isConsultReply) {
     
     // 2) P섹션 추출: Recommendation> / Opinion> / Plan / P> / 계획 및 권고
     let pSection = "";
-    const pMatch = block.match(/(?:Recommendation\s*>?|Opinion\s*>?|Plan\s*>?|\bP\s*>|계획\s*(?:및\s*)?권고)\s*\n?([\s\S]*?)(?=입원치료\s*필요|추적관찰|회신자|협진\s*총\s*소요|$)/i);
+    const pMatch = block.match(/(?:Recommendation\s*>?|Rec\s*>|Opinion\s*>?|Impression\s*>?|Imp\s*>|Assessment\s*>?|Plan\s*>?|(?:AP?|A\/P)\s*>|권고사항?\s*[>:]|소견\s*[>:]|결론\s*[>:]|계획\s*[>:]|향후\s*계획\s*[>:])\s*\n?([\s\S]*?)(?=입원치료\s*필요|추적관찰|회신자|협진\s*총\s*소요|$)/i);
     if (pMatch) {
       pSection = pMatch[1].trim();
     }
