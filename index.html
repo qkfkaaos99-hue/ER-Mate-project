@@ -1101,47 +1101,39 @@ if (isConsultReply) {
     }
     if (!cstDeptCode) return;
     
-    // 2) P섹션 추출: Recommendation> / Opinion> / Plan / P> / 계획 및 권고
-    let pSection = "";
-    const pMatch = block.match(/(?:Recommendation\s*>?|Rec\s*>|Opinion\s*>?|Impression\s*>?|Imp\s*>|Assessment\s*>?|Plan\s*>?|(?:AP?|A\/P)\s*>|권고사항?\s*[>:]|소견\s*[>:]|결론\s*[>:]|계획\s*[>:]|향후\s*계획\s*[>:])\s*\n?([\s\S]*?)(?=입원치료\s*필요|추적관찰|회신자|협진\s*총\s*소요|$)/i);
-    if (pMatch) {
-      pSection = pMatch[1].trim();
+    // 2) 회신내용 전체 추출 (P섹션만이 아닌 전체)
+    let fullText = "";
+    const hwStart = block.match(/회신내용/i);
+    if (hwStart) {
+      fullText = block.substring(hwStart.index).split('\n')
+        .filter(l => !/^회신내용\s*$/.test(l.trim()))
+        .filter(l => !/^환자진료시각|^환진진료시각/.test(l.trim()))
+        .filter(l => !/^\s*\d{4}-\d{2}-\d{2}[\s\d:]*$/.test(l.trim()))
+        .join('\n').trim();
     }
-    // P섹션 못 찾으면 "회신내용" 이후 전체에서 추출 시도 (메타줄 제외)
-    if (!pSection || pSection.length < 10) {
-      const hwMatch = block.match(/회신내용[\s\S]*?(?=입원치료\s*필요|추적관찰|$)/i);
-      if (hwMatch) {
-        pSection = hwMatch[0].split('\n')
-          .filter(l => !/^회신내용\s*$/.test(l.trim()))
-          .filter(l => !/^환자진료시각|^환진진료시각/.test(l.trim()))
-          .filter(l => !/^\d{4}-\d{2}-\d{2}[\s\d:]*$/.test(l.trim()))
-          .join('\n').trim();
-      }
+    // 회신내용 없으면 블록 전체에서 메타 제거
+    if (!fullText || fullText.length < 10) {
+      fullText = block.split('\n')
+        .filter(l => !/^타과회신|^회신내용|^환자진료시각|^\d{4}-\d{2}-\d{2}[\s\d:]*$/.test(l.trim()))
+        .join('\n').trim();
     }
-    if (!pSection || pSection.length < 10) {
-      const numberedMatch = block.match(/((?:^|\n)\s*(?:#\.|[1-9]\.|[①-⑨])\s*.+[\s\S]*?)(?=입원치료\s*필요|추적관찰|$)/m);
-      if (numberedMatch) pSection = numberedMatch[1].trim();
-    }
-    if (!pSection || pSection.length < 10) return;
+    if (!fullText || fullText.length < 10) return;
+    // 입원필요여부 이후 제거
+    fullText = fullText.replace(/입원치료\s*필요[\s\S]*$/i, '').trim();
     
-    // pSection에서 날짜/메타 줄 사전 제거
-    pSection = pSection.split('\n')
-      .filter(l => !/^\s*\d{4}-\d{2}-\d{2}[\s\d:]*$/.test(l.trim()))
-      .filter(l => !/^환자진료시각|^환진진료시각|^회신내용\s*$/.test(l.trim()))
-      .join('\n');
-    
-    // 3) 노이즈 제거 + 문장 분리
+    // 3) 노이즈 필터
     const noiseRe = /선생님|안녕하세요|안녕하십니까|감사합니다|드림$|올림$|배상$|의뢰주셔서|^\s*[\*\-]\s*$/;
     const sigRe = /\b[A-Z]{2,4}\s*(?:F\.|R\d|교수|올림|전임의|전공의)[\s\S]{0,20}(?:드림|올림|배상)?/i;
-    const metaRe = /^회신내용$|^환자진료시각|^환진진료시각|^\d{4}-\d{2}-\d{2}[\s\d:]*$|^[SOAC]\s*>|^AP?\s*>|^A\/P\s*>|^Imp(?:ression)?\s*>|^Rec(?:ommendation)?\s*>|^Opinion|^Assessment|^Plan/i;
+    const metaRe = /^회신내용$|^환자진료시각|^\d{4}-\d{2}-\d{2}[\s\d:]*$|^[SOAC]\s*>$|^AP?\s*>$|^A\/P\s*>$|^Imp(?:ression)?\s*>$|^Rec(?:ommendation)?\s*>$|^Opinion\s*>?$|^Assessment\s*>?$|^Plan\s*>?$/i;
     const labRe = /^[A-Z][A-Za-z\/\(\)]+\s+[\d\.]+$|^BUN\s|^Creatinine\s|^eGFR|^Na\(U\)|^CRP\s|^WBC\s|^Hb\s/;
     const dxRe = /^[A-Z]>$|^#\d+\s*$|^A>$|^O>$|^S>$/;
     
     // 의학 약어 마침표 보존
-    let safe = pSection
+    let safe = fullText
       .replace(/\b([A-Za-z])\.([A-Za-z])/g, '$1\u00B7$2')
       .replace(/\b(s\/p|r\/o|op|Lt|Rt|Pf|Dr)\./gi, '$1\u00B7');
     
+    // 문장 분리: 마침표+공백, 줄바꿈 기준 (보수적)
     const sentences = safe
       .split(/\.\s|\n/)
       .map(s => s.replace(/\u00B7/g, '.').replace(/^\s*[#\*\-\d\.\)]+\s*/, '').replace(/^\(?\d{4}-\d{2}-\d{2}\)?\s+\d{2}:\d{2}\s*/,'').trim())
@@ -1155,30 +1147,97 @@ if (isConsultReply) {
         return true;
       });
     
-    // 4) 카테고리 분류 + 항목 생성 (최대 8줄)
-    sentences.forEach((s, idx) => {
-      if (idx >= 8) return;
-      let cat = "소견", icon = "🔬";
-      if (/(?:전원|병상|전과|전동)/.test(s) && !/하시게되면|하게되면|경우/.test(s)) { cat="배치"; icon="🏥"; }
-      else if (/호스피스|hospice|완화|연명|POLST|DNR/i.test(s)) { cat="완화의료"; icon="🕊️"; }
-      else if (/수술|op |시술|stent|insertion|기관지내시경/i.test(s)) { cat="수술/시술"; icon="🔪"; }
-      else if (/chemo|항암/i.test(s)) { cat="항암"; icon="💊"; }
-      else if (/투약|약물|유지|중단|처방|투여|infusion|CRRT|aspirin|LMWH|supplement/i.test(s)) { cat="투약"; icon="💊"; }
-      else if (/외래|OPD|f\/u|follow|내원/i.test(s)) { cat="외래"; icon="📅"; }
-      else if (/의뢰|협진|consult|부탁|추천드립니다/i.test(s)) { cat="협진"; icon="🏥"; }
-      else if (/검체|culture|시행|채혈|검사|panel|stain|AFB/i.test(s)) { cat="검사"; icon="🔬"; }
-      let detail = s.replace(/^\[?\(?\d{4}-\d{2}-\d{2}[^\]]*\]?\s*/,'').replace(/^\[\(.*?\)\]\s*/,'').trim();
-      detail = detail.length > 200 ? detail.substring(0, 197) + "..." : detail;
-      // 외래 카테고리면 opdItems에 짧게 추가
+    // 4) 액션 vs 소견 분리
+    const actionRe = {
+      "배치":    { re: /(?:전원|병상|전과|전동)/, neg: /하시게되면|하게되면|경우/, icon: "🏥" },
+      "완화의료": { re: /호스피스|hospice|완화|연명|POLST|DNR/i, icon: "🕊️" },
+      "수술/시술": { re: /수술|op\b|시술|stent|insertion|기관지내시경|traction|교체|제거/i, icon: "🔪" },
+      "항암":    { re: /chemo|항암/i, icon: "💊" },
+      "투약":    { re: /투약|약물|유지|중단|처방|투여|infusion|CRRT|aspirin|LMWH|supplement|irrigation|NPO/i, icon: "💊" },
+      "외래":    { re: /외래|OPD|f\/u|follow|내원/i, icon: "📅" },
+      "협진":    { re: /의뢰|협진|consult|부탁|추천드립니다/i, icon: "🏥" },
+      "검사":    { re: /검체|culture|시행해보시고|채혈|검사|panel|stain|AFB|PSA/i, icon: "🔬" }
+    };
+    
+    const actionBuckets = {};  // cat -> [문장들]
+    const opinionSentences = [];
+    
+    sentences.forEach(s => {
+      let matched = false;
+      for (const [cat, cfg] of Object.entries(actionRe)) {
+        if (cfg.re.test(s) && !(cfg.neg && cfg.neg.test(s))) {
+          if (!actionBuckets[cat]) actionBuckets[cat] = { sentences: [], icon: cfg.icon };
+          actionBuckets[cat].sentences.push(s);
+          matched = true;
+          break;
+        }
+      }
+      if (!matched) opinionSentences.push(s);
+    });
+    
+    // 4-a) 소견 축약: 수식어/배경 제거 → 핵심 결론만
+    if (opinionSentences.length > 0) {
+      // 문장별 축약: 불필요한 배경/수식 제거
+      const trimFiller = (s) => s
+        .replace(/환자\s*/g, '')
+        .replace(/제외하고\s*/g, '')
+        .replace(/평가\s*제한적이기는\s*하나\s*/g, '')
+        .replace(/같이\s*/g, '')
+        .replace(/만한\s*/g, '')
+        .replace(/있어\s*보입니다/g, '가능성')
+        .replace(/확인되지\s*않습니다/g, '미확인')
+        .replace(/확인하였습니다/g, '확인')
+        .replace(/것을\s*확인하였습니다/g, '확인')
+        .replace(/을\s*유발할\s*/g, ' 유발 ')
+        .replace(/에\s*의해\s*악화되었을\s*가능성/g, ' → 악화 가능성')
+        .replace(/\s+/g, ' ').trim();
+      const condensed = opinionSentences.map(trimFiller).filter(s => s.length > 5);
+      let summary = condensed.join('; ');
+      if (summary.length > 200) summary = summary.substring(0, 197) + '...';
+      r.instructions.push({
+        id: "cst_" + bi + "_op",
+        task: cstDeptCode,
+        detail: summary,
+        icon: "🔬",
+        category: "소견",
+        blockIdx: bi
+      });
+    }
+    
+    // 4-b) 액션 카테고리별 머지하여 추가
+    const catOrder = ["배치","완화의료","수술/시술","항암","투약","외래","협진","검사"];
+    // 액션 문장 축약 함수: 수식어/경어 제거
+    const condenseAction = (s) => s
+      .replace(/해보시기\s*바랍니다/g, '')
+      .replace(/해주시기\s*바랍니다/g, '')
+      .replace(/하시기\s*바랍니다/g, '')
+      .replace(/바랍니다/g, '')
+      .replace(/해주시기\s*바랍/g, '')
+      .replace(/해보시고/g, '후')
+      .replace(/걸어둔\s*상태로/g, '유지')
+      .replace(/할\s*수\s*있도록\s*/g, '')
+      .replace(/보다\s*작은\s*/g, '작은 ')
+      .replace(/확인된다면/g, '시')
+      .replace(/보인다면/g, '시')
+      .replace(/위해\s*/g, '→ ')
+      .replace(/\s+/g, ' ').trim()
+      .replace(/[,;]\s*$/, '');
+    catOrder.forEach(cat => {
+      if (!actionBuckets[cat]) return;
+      const bucket = actionBuckets[cat];
+      let detail = bucket.sentences.map(condenseAction).join('; ');
+      if (detail.length > 250) detail = detail.substring(0, 247) + '...';
       if (cat === "외래") {
-        const opdShort = s.match(/(?:외래|OPD|f\/u|follow).{0,20}/i);
-        r.opdItems.push(cstDeptCode + " " + (opdShort ? opdShort[0].trim() : "외래 f/u"));
+        bucket.sentences.forEach(s => {
+          const opdShort = s.match(/(?:외래|OPD|f\/u|follow).{0,20}/i);
+          r.opdItems.push(cstDeptCode + " " + (opdShort ? opdShort[0].trim() : "외래 f/u"));
+        });
       }
       r.instructions.push({
-        id: "cst_" + bi + "_" + idx,
+        id: "cst_" + bi + "_" + cat,
         task: cstDeptCode,
         detail: detail,
-        icon: icon,
+        icon: bucket.icon,
         category: cat,
         blockIdx: bi
       });
@@ -1284,7 +1343,7 @@ function buildChecklist(p){
     });
   }
   // 검사/시술
-  for(const procName of (p.isConsult ? [] : p.procedures)){
+  for(const procName of (p.isConsult ? [] : p.procedures.filter(n => !(n==="OP" && p.op)))){
     const proc=PROCEDURE_DB[procName];
     if(!proc)continue;
     const pid="proc_"+procName;
