@@ -1074,8 +1074,13 @@ if (isConsultReply) {
     // 1) 진료과 식별: "타과회신" 바로 다음 줄
     let cstDept = "";
     for (let i = 0; i < lines.length; i++) {
-      if (/^타과회신/.test(lines[i].trim()) && i + 1 < lines.length) {
-        cstDept = lines[i + 1].trim();
+      if (/^타과회신/.test(lines[i].trim())) {
+        const inlineMatch = lines[i].match(/타과회신\s*(?:\([^)]*\))?\s*(.+)/);
+        if (inlineMatch) {
+          const candidate = inlineMatch[1].replace(/회신내용.*$/i,'').trim();
+          if (candidate.length > 1) { cstDept = candidate; break; }
+        }
+        if (i + 1 < lines.length) { cstDept = lines[i + 1].trim(); }
         break;
       }
     }
@@ -1103,12 +1108,16 @@ if (isConsultReply) {
       const hwMatch = block.match(/회신내용[\s\S]*?(?=입원치료\s*필요|추적관찰|$)/i);
       if (hwMatch) pSection = hwMatch[0];
     }
+    if (!pSection || pSection.length < 10) {
+      const numberedMatch = block.match(/((?:^|\n)\s*(?:#\.|[1-9]\.|[①-⑨])\s*.+[\s\S]*?)(?=입원치료\s*필요|추적관찰|$)/m);
+      if (numberedMatch) pSection = numberedMatch[1].trim();
+    }
     if (!pSection || pSection.length < 10) return;
     
     // 3) 노이즈 제거 + 문장 분리
     const noiseRe = /선생님|안녕하세요|안녕하십니까|감사합니다|드림$|올림$|배상$|의뢰주셔서|^\s*[\*\-]\s*$/;
     const sigRe = /\b[A-Z]{2,4}\s*(?:F\.|R\d|교수|올림|전임의|전공의)[\s\S]{0,20}(?:드림|올림|배상)?/i;
-    const metaRe = /^회신내용$|^환자진료시각|^\d{4}-\d{2}-\d{2}\s+\d{2}:|^[SOA]\s*>|^Recommendation\s*>|^Opinion|^Plan/i;
+    const metaRe = /^회신내용$|^환자진료시각|^\d{4}-\d{2}-\d{2}\s+\d{2}:|^[SOAC]\s*>|^AP?\s*>|^A\/P\s*>|^Imp(?:ression)?\s*>|^Rec(?:ommendation)?\s*>|^Opinion|^Assessment|^Plan/i;
     const labRe = /^[A-Z][A-Za-z\/\(\)]+\s+[\d\.]+$|^BUN\s|^Creatinine\s|^eGFR|^Na\(U\)|^CRP\s|^WBC\s|^Hb\s/;
     const dxRe = /^[A-Z]>$|^#\d|^A>$|^O>$|^S>$/;
     
