@@ -1078,8 +1078,12 @@ if (isConsultReply) {
         const inlineMatch = lines[i].match(/타과회신\s*(?:\([^)]*\))?\s*(.+)/);
         if (inlineMatch) {
           const candidate = inlineMatch[1].replace(/회신내용.*$/i,'').trim();
-          if (candidate.length > 1) { cstDept = candidate; break; }
+          // 날짜 패턴이 아니고 길이가 있으면 사용
+          if (candidate.length > 1 && !/^\(?\d{4}-\d{2}-\d{2}\)?$/.test(candidate)) {
+            cstDept = candidate; break;
+          }
         }
+        // 인라인에서 못 찾으면 다음 줄
         if (i + 1 < lines.length) { cstDept = lines[i + 1].trim(); }
         break;
       }
@@ -1103,10 +1107,16 @@ if (isConsultReply) {
     if (pMatch) {
       pSection = pMatch[1].trim();
     }
-    // P섹션 못 찾으면 "회신내용" 이후 전체에서 추출 시도
+    // P섹션 못 찾으면 "회신내용" 이후 전체에서 추출 시도 (메타줄 제외)
     if (!pSection || pSection.length < 10) {
       const hwMatch = block.match(/회신내용[\s\S]*?(?=입원치료\s*필요|추적관찰|$)/i);
-      if (hwMatch) pSection = hwMatch[0];
+      if (hwMatch) {
+        pSection = hwMatch[0].split('\n')
+          .filter(l => !/^회신내용\s*$/.test(l.trim()))
+          .filter(l => !/^환자진료시각|^환진진료시각/.test(l.trim()))
+          .filter(l => !/^\d{4}-\d{2}-\d{2}[\s\d:]*$/.test(l.trim()))
+          .join('\n').trim();
+      }
     }
     if (!pSection || pSection.length < 10) {
       const numberedMatch = block.match(/((?:^|\n)\s*(?:#\.|[1-9]\.|[①-⑨])\s*.+[\s\S]*?)(?=입원치료\s*필요|추적관찰|$)/m);
@@ -1114,12 +1124,18 @@ if (isConsultReply) {
     }
     if (!pSection || pSection.length < 10) return;
     
+    // pSection에서 날짜/메타 줄 사전 제거
+    pSection = pSection.split('\n')
+      .filter(l => !/^\s*\d{4}-\d{2}-\d{2}[\s\d:]*$/.test(l.trim()))
+      .filter(l => !/^환자진료시각|^환진진료시각|^회신내용\s*$/.test(l.trim()))
+      .join('\n');
+    
     // 3) 노이즈 제거 + 문장 분리
     const noiseRe = /선생님|안녕하세요|안녕하십니까|감사합니다|드림$|올림$|배상$|의뢰주셔서|^\s*[\*\-]\s*$/;
     const sigRe = /\b[A-Z]{2,4}\s*(?:F\.|R\d|교수|올림|전임의|전공의)[\s\S]{0,20}(?:드림|올림|배상)?/i;
-    const metaRe = /^회신내용$|^환자진료시각|^\d{4}-\d{2}-\d{2}\s+\d{2}:|^[SOAC]\s*>|^AP?\s*>|^A\/P\s*>|^Imp(?:ression)?\s*>|^Rec(?:ommendation)?\s*>|^Opinion|^Assessment|^Plan/i;
+    const metaRe = /^회신내용$|^환자진료시각|^환진진료시각|^\d{4}-\d{2}-\d{2}[\s\d:]*$|^[SOAC]\s*>|^AP?\s*>|^A\/P\s*>|^Imp(?:ression)?\s*>|^Rec(?:ommendation)?\s*>|^Opinion|^Assessment|^Plan/i;
     const labRe = /^[A-Z][A-Za-z\/\(\)]+\s+[\d\.]+$|^BUN\s|^Creatinine\s|^eGFR|^Na\(U\)|^CRP\s|^WBC\s|^Hb\s/;
-    const dxRe = /^[A-Z]>$|^#\d|^A>$|^O>$|^S>$/;
+    const dxRe = /^[A-Z]>$|^#\d+\s*$|^A>$|^O>$|^S>$/;
     
     // 의학 약어 마침표 보존
     let safe = pSection
@@ -1128,7 +1144,7 @@ if (isConsultReply) {
     
     const sentences = safe
       .split(/\.\s|\n/)
-      .map(s => s.replace(/\u00B7/g, '.').replace(/^\s*[\*\-\d\.\)]\s*/, '').trim())
+      .map(s => s.replace(/\u00B7/g, '.').replace(/^\s*[#\*\-\d\.\)]+\s*/, '').replace(/^\(?\d{4}-\d{2}-\d{2}\)?\s+\d{2}:\d{2}\s*/,'').trim())
       .filter(s => {
         if (s.length < 8) return false;
         if (noiseRe.test(s)) return false;
@@ -1139,9 +1155,9 @@ if (isConsultReply) {
         return true;
       });
     
-    // 4) 카테고리 분류 + 항목 생성 (최대 5줄)
+    // 4) 카테고리 분류 + 항목 생성 (최대 8줄)
     sentences.forEach((s, idx) => {
-      if (idx >= 5) return;
+      if (idx >= 8) return;
       let cat = "소견", icon = "🔬";
       if (/(?:전원|병상|전과|전동)/.test(s) && !/하시게되면|하게되면|경우/.test(s)) { cat="배치"; icon="🏥"; }
       else if (/호스피스|hospice|완화|연명|POLST|DNR/i.test(s)) { cat="완화의료"; icon="🕊️"; }
@@ -1151,10 +1167,13 @@ if (isConsultReply) {
       else if (/외래|OPD|f\/u|follow|내원/i.test(s)) { cat="외래"; icon="📅"; }
       else if (/의뢰|협진|consult|부탁|추천드립니다/i.test(s)) { cat="협진"; icon="🏥"; }
       else if (/검체|culture|시행|채혈|검사|panel|stain|AFB/i.test(s)) { cat="검사"; icon="🔬"; }
-      
-      let detail = s.length > 120 ? s.substring(0, 117) + "..." : s;
-      // 외래 카테고리면 opdItems에도 추가
-      if (cat === "외래") r.opdItems.push(detail);
+      let detail = s.replace(/^\[?\(?\d{4}-\d{2}-\d{2}[^\]]*\]?\s*/,'').replace(/^\[\(.*?\)\]\s*/,'').trim();
+      detail = detail.length > 200 ? detail.substring(0, 197) + "..." : detail;
+      // 외래 카테고리면 opdItems에 짧게 추가
+      if (cat === "외래") {
+        const opdShort = s.match(/(?:외래|OPD|f\/u|follow).{0,20}/i);
+        r.opdItems.push(cstDeptCode + " " + (opdShort ? opdShort[0].trim() : "외래 f/u"));
+      }
       r.instructions.push({
         id: "cst_" + bi + "_" + idx,
         task: cstDeptCode,
