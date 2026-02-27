@@ -1324,7 +1324,7 @@ function buildChecklist(p){
   // 입원 시 과별/유닛별 참고
   if(p.disposition==="admission"){
     for(const d of p.departments)if(DEPT_NOTES[d])items.push({id:"dept_"+d,task:d+" 입원참고",detail:DEPT_NOTES[d],icon:"📌",type:"context",highlight:false});
-    if(p.unit&&UNIT_CONSENTS[p.unit])items.push({id:"unit_"+p.unit,task:p.unit+" 동의서",detail:UNIT_CONSENTS[p.unit],icon:"📝",type:"conditional",highlight:true});
+    if(p.unit && UNIT_CONSENTS[p.unit] && !p.isConsult)items.push({id:"unit_"+p.unit,task:p.unit+" 동의서",detail:UNIT_CONSENTS[p.unit],icon:"📝",type:"conditional",highlight:true});
     if(p.npo)items.push({id:"c_npo",task:"NPO유지확인",detail:"금식상태유지",icon:"🚫",type:"conditional"});
     if(p.op){
       const opProc=PROCEDURE_DB["OP"];
