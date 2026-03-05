@@ -558,6 +558,26 @@ const PROCEDURE_DB = {
     transfer: [""],
     important: false,
   },
+  "EBP": {
+  keywords: /\bEBP\b|epidural blood patch|경막외혈액봉합술/i,
+  prep: [
+    "18G IV line — antecubital vein (경추 시술 예정 시: wrist vein)",
+    "동의서 2종: 경막외 혈액 봉합술 동의서 + 영상 유도하 척추 천자 동의서",
+    "항응고제/항혈소판제 복용 여부 주치의 확인",
+    "경추·상위흉추 부위가 아니면 금식 불필요 — 주치의 confirm",
+    "약물 부작용 과거력 있으면 반드시 주치의 상의",
+  ],
+  med: [],
+  post: [
+    "시술 직후 심한 두통 또는 상하지 통증 발생 시 즉시 주치의 보고",
+    "24hr ABR",
+    "시술 후 24시간 시술 부위 물 접촉 금지",
+    "3일간 수영·사우나 등 금지",
+  ],
+  warning: [],
+  transfer: [""],
+  important: false,
+  },
 };
 
 // ========== 업무 가이드 DB ==========
