@@ -670,7 +670,7 @@ const GUIDE_DB = {
       {cat:"속도",txt:"40cc/hr = 3~4초에 1방울 = 24시간"},
       {cat:"속도",txt:"80cc/hr = 2~3초에 1방울 = 12시간"},
       {cat:"속도",txt:"120cc/hr = 1~2초에 1방울 = 8~9시간"},
-      {cat:"참고",txt:"[SUP] = Y사인 넣을 때마다 올라옴 / [TIT] 청구 → 투약 시 Y사인"},
+      {cat:"참고",txt:"[SUP] = Y사인 넣을 때마다 올라옴 / [TIT] 청구 → 투약 시 'Y-'사인"},
     ]
   },
   "TDM": {
@@ -1200,8 +1200,8 @@ if (isPsectionMode) {
     planLines.forEach((line, idx) => {
       if (idx >= 5) return;
       let cat = "지시", icon = "📋";
-      if (/외래|OPD|f\/u|follow/i.test(line)) { cat = "외래"; icon = "📅"; r.opdItems.push(line); }
-      else if (/교육|재내원|재방문/i.test(line)) { cat = "교육"; icon = "📚"; }
+      if (/외래|OPD|f\/u|follow/i.test(line)) { r.opdItems.push(line); return; }
+      else if (/교육|재내원|재방문/i.test(line)) { r.educationItems.push(line); return; }
       else if (/O2|산소|투약|복용|투여|처방/i.test(line)) { cat = "투약"; icon = "💊"; }
       else if (/검사|촬영|lab|채혈/i.test(line)) { cat = "검사"; icon = "🔬"; }
       r.instructions.push({
@@ -1220,17 +1220,15 @@ if (isPsectionMode) {
   if (resultMatch) {
     const resultLines = resultMatch[1].split(/\n/).map(l => l.trim()).filter(l => l.length > 5);
     resultLines.forEach((line, idx) => {
-      let cat = null, icon = "📋";
-      if (/외래|OPD|f\/u|follow/i.test(line)) { cat = "외래"; icon = "📅"; r.opdItems.push(line); }
-      else if (/교육|재내원|재방문|설명함/.test(line)) { cat = "교육"; icon = "📚"; }
-      else if (/처방|투약|복용|투여/.test(line)) { cat = "투약"; icon = "💊"; }
-      if (cat) {
+      if (/외래|OPD|f\/u|follow/i.test(line)) { r.opdItems.push(line); }
+      else if (/교육|재내원|재방문|설명함/.test(line)) { r.educationItems.push(line); }
+      else if (/처방|투약|복용|투여/.test(line)) {
         r.instructions.push({
           id: "res_" + idx,
           task: "입원결과",
           detail: line,
-          icon: icon,
-          category: cat,
+          icon: "💊",
+          category: "투약",
           blockIdx: 0
         });
       }
@@ -1242,19 +1240,13 @@ if (isPsectionMode) {
   if (courseMatch) {
     const courseText = courseMatch[1];
     const eduLines = courseText.split(/[.\n]/).filter(l => /교육함|교육하였|설명함|하시도록|재내원|재방문/.test(l)).map(l => l.trim()).filter(l => l.length > 3);
-    eduLines.forEach((line) => { r.educationItems.push(line); });
+    eduLines.forEach((line) => {
+      if (!r.educationItems.includes(line)) r.educationItems.push(line);
+    });
     if (r.opdItems.length === 0) {
       const opdLines = courseText.split(/[.\n]/).filter(l => /외래.*내원|외래.*f\/u|OPD.*f\/u|외래.*시행/i.test(l)).map(l => l.trim()).filter(l => l.length > 5);
-      opdLines.forEach((line, idx) => {
+      opdLines.forEach((line) => {
         r.opdItems.push(line);
-        r.instructions.push({
-          id: "crs_opd_" + idx,
-          task: "외래예약",
-          detail: line,
-          icon: "📅",
-          category: "외래",
-          blockIdx: 0
-        });
       });
     }
   }
@@ -1620,11 +1612,11 @@ function _manHome(){ return `
   <div class="mn-title">⚡ 3가지 사용 모드</div>
   <div class="mn-card">
     <div class="mn-card-title">🔍 검색 모드 <span class="mn-badge" style="color:var(--blue);border-color:var(--blue)">20자 미만</span></div>
-    <div class="mn-card-sub">시술명 또는 업무 키워드 입력 → 지침 즉시 조회<br><span style="color:var(--text3)">예: ERCP, PTBD, 수혈, CIV, 고칼륨, Night업무</span></div>
+    <div class="mn-card-sub">시술명 또는 업무 키워드 입력 → 지침 즉시 조회<br><span style="color:var(--text3)">예: ERCP, PTBD, 수혈, CIV, 고칼륨</span></div>
   </div>
   <div class="mn-card">
     <div class="mn-card-title">📋 분석 모드 <span class="mn-badge" style="color:var(--green);border-color:var(--green)">20자 이상</span></div>
-    <div class="mn-card-sub">퇴원기록 전체 붙여넣기 → 퇴실 체크리스트 자동생성<br><span style="color:var(--text3)">복사범위: <b>입원경과 ~ 퇴원장소</b>까지 드래그</span></div>
+    <div class="mn-card-sub">퇴원기록 전체 붙여넣기 → 퇴실 체크리스트 자동생성<br><span style="color:var(--text3)">복사범위: <b>입원경과 ~ 퇴원장소</b>까지 드래그<br>향후계획·입원결과·입원경과 섹션에서 외래/교육/처방 항목 자동추출</span></div>
   </div>
   <div class="mn-card">
     <div class="mn-card-title">🏥 타과회신 모드</div>
@@ -1668,7 +1660,6 @@ function _manGuide(){
     {l:"💊 투약·처치",kws:["수혈","CIV","고칼륨","mix금기","투약속도","TDM","ACTH","투석","heparin","dalteparin","terlipressin","statin","steroid","lasix","Grasin","Anti투약"]},
     {l:"📝 간호기록",kws:["간호기록","간호진단","I/O","드레싱주기"]},
     {l:"🔧 업무절차",kws:["신환접수","약반납","마약반납","접수취소","이송","enema","A-line","케모포트배양"]},
-    {l:"⚡ 응급/스케줄",kws:["chest tube","post seizure","파상풍","Day업무","Night업무","NA업무","call업무"]},
   ];
   let h=`<div class="mn-sec"><div class="mn-title">📖 업무 가이드 DB — 탭하면 바로 조회</div>`;
   groups.forEach(g=>{
