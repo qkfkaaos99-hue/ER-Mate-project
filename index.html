@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ER Mate - 스마트 간호 도우미</title>
 <style>
   /* === 테마 변수 === */
@@ -74,8 +74,9 @@
   .dept-select { background:var(--hdr-bg1); color:#fff; border:1px solid var(--hdr-border); border-radius:2px; padding:3px 6px; font-size:11px; font-weight:700; outline:none; cursor:pointer; max-width:160px; }
   .dept-select option { background:var(--bg2); color:var(--text); }
   .input-body { padding: 8px; }
-  textarea { width: 100%; min-height: 100px; padding: 8px; background: var(--input-bg); border: 1px solid var(--input-border); color: var(--input-text); font-family: 'Malgun Gothic', monospace; font-size: 16px; resize: vertical; outline: none; line-height: 1.7; border-radius: 1px; }
-  textarea::placeholder { color: var(--text-dim); font-size: 12px; }
+  textarea { width: 100%; min-height: 100px; padding: 8px; background: var(--input-bg); border: 1px solid var(--input-border); color: var(--input-text); font-family: 'Malgun Gothic', monospace; font-size: 12px; resize: vertical; outline: none; line-height: 1.7; border-radius: 1px; }
+  textarea:focus { border-color: var(--blue); }
+  textarea::placeholder { color: var(--text-dim); }
   
   .btn-run { width: 100%; margin-top: 6px; padding: 14px 0; background: var(--hdr-bg1); border: 1px solid var(--hdr-border); color: var(--text-dim); font-size: 14px; font-weight: 700; cursor: pointer; border-radius: 4px; -webkit-tap-highlight-color: rgba(0,0,0,0); touch-action: manipulation; user-select: none; -webkit-user-select: none; }
   .btn-run.active { color: #fff; background: var(--blue); border-color: var(--blue); }
@@ -557,50 +558,10 @@ const PROCEDURE_DB = {
     transfer: [""],
     important: false,
   },
-  "EBP": {
-  keywords: /\bEBP\b|epidural blood patch|경막외혈액봉합술/i,
-  prep: [
-    "18G IV line — antecubital vein (경추 시술 예정 시: wrist vein)",
-    "동의서 2종: 경막외 혈액 봉합술 동의서 + 영상 유도하 척추 천자 동의서",
-    "항응고제/항혈소판제 복용 여부 주치의 확인",
-    "경추·상위흉추 부위가 아니면 금식 불필요 — 주치의 confirm",
-    "약물 부작용 과거력 있으면 반드시 주치의 상의",
-  ],
-  med: [],
-  post: [
-    "시술 직후 심한 두통 또는 상하지 통증 발생 시 즉시 주치의 보고",
-    "24hr ABR",
-    "시술 후 24시간 시술 부위 물 접촉 금지",
-    "3일간 수영·사우나 등 금지",
-  ],
-  warning: [],
-  transfer: [""],
-  important: false,
-  },
 };
 
 // ========== 업무 가이드 DB ==========
 const GUIDE_DB = {
-  "orthoBP": {
-  keywords: /orthostatic|orthoBP|ortho\s*bp|기립성\s*저혈압|기립성\s*혈압|ortho/i,
-  icon: "🩺",
-  items: [
-    {cat:"준비",txt:"처치실 또는 눕힐 수 있는 자리 확보 후 supine 자세로 5~15분 안정"},
-    {cat:"측정순서",txt:"① Supine 상태에서 BP/HR 측정"},
-    {cat:"측정순서",txt:"② 일어서자마자(erect) BP/HR 측정"},
-    {cat:"측정순서",txt:"③ 기립 2분 후 BP/HR 측정"},
-    {cat:"측정순서",txt:"④ 기립 4분(2분 추가) 후 BP/HR 측정"},
-    {cat:"기록",txt:"임상관찰에 시간 기재 예시 — 00:00 supine / 00:01 erect / 00:03 erect / 00:05 erect"},
-    {cat:"판정기준",txt:"Positive: 기립 후 3분 이내 SBP ≥20mmHg 하락 OR DBP ≥10mmHg 하락", highlight:true},
-    {cat:"판정기준",txt:"Negative 시 → 임상관찰에 결과 기록 후 주치의 noti"},
-    {cat:"판정기준",txt:"[참고] POTS 의심: 혈압 하락 없이 기립 후 10분 이내 HR +30bpm 이상 또는 120bpm 이상"},
-    {cat:"주의",txt:"⚠️ 심한 dizziness 또는 BP 급격 저하 시 → 즉시 중단, 눕히고 주치의 noti", highlight:true},
-    {cat:"주의",txt:"⚠️ 기립 불가 환자 → high Fowler's position으로 시행 여부 주치의 noti 후 결정"},
-    {cat:"수가",txt:"오더에 Orthostatic Blood Pressure Test 있는 경우 → 메뉴 > 검사시행관리 > orthoBP 시행처리"},
-    {cat:"수가",txt:"오더 없는 경우 → 처치수가에서 'Orthostatic Blood Pressure Test' 검색 후 처치 넣기"},
-  ]
-},
-
   "ICU": {
     keywords: /\bICU\b|중환자실/i,
     icon: "🏥",
@@ -1231,10 +1192,11 @@ if (isPsectionMode) {
 
 
 } else if (isDischargeSummary) {
-  // ========== 퇴원기록 파싱: 향후계획 섹션 추출 ==========
+  // ========== 퇴원기록 파싱 ==========
+  // 1. 향후계획 섹션
   const planMatch = t.match(/향후계획\s*\n([\s\S]*?)(?=퇴원장소|$)/i);
   if (planMatch) {
-    const planLines = planMatch[1].split(/\n/).map(l => l.trim()).filter(l => l.length > 3);
+    const planLines = planMatch[1].split(/\n/).map(l => l.trim()).filter(l => l.length > 1 && !/^귀가$|^집$|^타병원$|^요양병원$/.test(l));
     planLines.forEach((line, idx) => {
       if (idx >= 5) return;
       let cat = "지시", icon = "📋";
@@ -1252,15 +1214,49 @@ if (isPsectionMode) {
       });
     });
   }
-  
-  // 입원경과 섹션에서 교육 항목도 추출
+
+  // 2. 입원결과 섹션 — 외래/교육/처방 언급 추출
+  const resultMatch = t.match(/입원결과\s*\n?([\s\S]*?)(?=향후계획|$)/i);
+  if (resultMatch) {
+    const resultLines = resultMatch[1].split(/\n/).map(l => l.trim()).filter(l => l.length > 5);
+    resultLines.forEach((line, idx) => {
+      let cat = null, icon = "📋";
+      if (/외래|OPD|f\/u|follow/i.test(line)) { cat = "외래"; icon = "📅"; r.opdItems.push(line); }
+      else if (/교육|재내원|재방문|설명함/.test(line)) { cat = "교육"; icon = "📚"; }
+      else if (/처방|투약|복용|투여/.test(line)) { cat = "투약"; icon = "💊"; }
+      if (cat) {
+        r.instructions.push({
+          id: "res_" + idx,
+          task: "입원결과",
+          detail: line,
+          icon: icon,
+          category: cat,
+          blockIdx: 0
+        });
+      }
+    });
+  }
+
+  // 3. 입원경과 섹션 — 교육 및 외래 언급 추출 (IMN note 포함)
   const courseMatch = t.match(/입원경과\s*\n?([\s\S]*?)(?=입원결과|$)/i);
   if (courseMatch) {
     const courseText = courseMatch[1];
     const eduLines = courseText.split(/[.\n]/).filter(l => /교육함|교육하였|설명함|하시도록|재내원|재방문/.test(l)).map(l => l.trim()).filter(l => l.length > 3);
-    eduLines.forEach((line, idx) => {
-      r.educationItems.push(line);
-    });
+    eduLines.forEach((line) => { r.educationItems.push(line); });
+    if (r.opdItems.length === 0) {
+      const opdLines = courseText.split(/[.\n]/).filter(l => /외래.*내원|외래.*f\/u|OPD.*f\/u|외래.*시행/i.test(l)).map(l => l.trim()).filter(l => l.length > 5);
+      opdLines.forEach((line, idx) => {
+        r.opdItems.push(line);
+        r.instructions.push({
+          id: "crs_opd_" + idx,
+          task: "외래예약",
+          detail: line,
+          icon: "📅",
+          category: "외래",
+          blockIdx: 0
+        });
+      });
+    }
   }
 
 } else {
