@@ -581,6 +581,26 @@ const PROCEDURE_DB = {
 
 // ========== 업무 가이드 DB ==========
 const GUIDE_DB = {
+  "orthoBP": {
+  keywords: /orthostatic|orthoBP|ortho\s*bp|기립성\s*저혈압|기립성\s*혈압|ortho/i,
+  icon: "🩺",
+  items: [
+    {cat:"준비",txt:"처치실 또는 눕힐 수 있는 자리 확보 후 supine 자세로 5~15분 안정"},
+    {cat:"측정순서",txt:"① Supine 상태에서 BP/HR 측정"},
+    {cat:"측정순서",txt:"② 일어서자마자(erect) BP/HR 측정"},
+    {cat:"측정순서",txt:"③ 기립 2분 후 BP/HR 측정"},
+    {cat:"측정순서",txt:"④ 기립 4분(2분 추가) 후 BP/HR 측정"},
+    {cat:"기록",txt:"임상관찰에 시간 기재 예시 — 00:00 supine / 00:01 erect / 00:03 erect / 00:05 erect"},
+    {cat:"판정기준",txt:"Positive: 기립 후 3분 이내 SBP ≥20mmHg 하락 OR DBP ≥10mmHg 하락", highlight:true},
+    {cat:"판정기준",txt:"Negative 시 → 임상관찰에 결과 기록 후 주치의 noti"},
+    {cat:"판정기준",txt:"[참고] POTS 의심: 혈압 하락 없이 기립 후 10분 이내 HR +30bpm 이상 또는 120bpm 이상"},
+    {cat:"주의",txt:"⚠️ 심한 dizziness 또는 BP 급격 저하 시 → 즉시 중단, 눕히고 주치의 noti", highlight:true},
+    {cat:"주의",txt:"⚠️ 기립 불가 환자 → high Fowler's position으로 시행 여부 주치의 noti 후 결정"},
+    {cat:"수가",txt:"오더에 Orthostatic Blood Pressure Test 있는 경우 → 메뉴 > 검사시행관리 > orthoBP 시행처리"},
+    {cat:"수가",txt:"오더 없는 경우 → 처치수가에서 'Orthostatic Blood Pressure Test' 검색 후 처치 넣기"},
+  ]
+},
+
   "ICU": {
     keywords: /\bICU\b|중환자실/i,
     icon: "🏥",
