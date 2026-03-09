@@ -1155,7 +1155,7 @@ if (isPsectionMode) {
       if (sigRe.test(s)) return false;
       if (labRe.test(s)) return false;
       // 소견성 어미 필터 (액션 키워드 없으면 제거)
-      const opinionRe = /것\s*같습니다|생각해\s*볼\s*수|막막한|보입니다$|됩니다$|있습니다$|없습니다$|습니다$|에$|면\s*있어$/;
+      const opinionRe = /것\s*같습니다|생각해\s*볼\s*수|막막한|보입니다$|됩니다$|있습니다$|없습니다$|에$|면\s*있어$/;
       const actionKw = /의뢰|협진|부탁|추천|시행|투약|처방|투여|중단|시작|증량|감량|입원|전원|외래|OPD|f\/u|검사|채혈|culture/i;
       if (opinionRe.test(s) && !actionKw.test(s)) return false;
       return true;
