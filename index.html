@@ -168,7 +168,7 @@
     <span class="hdr-logo" style="background:var(--blue);">EM</span>
     <span class="hdr-title">ER Mate</span>
     <!-- === 버전 === -->
-    <span class="hdr-sub">2026.03.06</span>
+    <span class="hdr-sub">2026.03.10</span>
   </div>
   <div class="hdr-right">
     <button class="btn-theme" onclick="showManual()" title="사용설명서" style="font-size:13px;">❓</button>
@@ -1130,55 +1130,100 @@ const deptAbbrMap = {"비뇨의학과":"URO","비뇨기과":"URO","종양내과"
 if (isPsectionMode) {
   // ========== P섹션 전용 파싱 (드롭다운 과 선택 시) ==========
   r.departments = [selectedDept];
-  
+
   // 노이즈 필터
- const noiseRe = /선생님|안녕하세요|안녕하십니까|감사합니다|드림$|올림$|배상$|배상\.|드림\./;
+  const noiseRe = /선생님|안녕하세요|안녕하십니까|감사합니다|드림$|올림$|배상$|배상\.|드림\./;
   const sigRe = /\b[A-Z]{2,4}\s*(?:F\.|R\d|교수|올림|전임의|전공의)|^[가-힣]{2,4}\s*(배상|드림|올림)/;
   const labRe = /^[A-Z][A-Za-z\/\(\)]+\s+[\d\.]+$|^BUN\s|^Creatinine\s|^eGFR|^Na\(U\)|^CRP\s|^WBC\s|^Hb\s/;
-  
-  const tMerged = t;
 
-  // 의학 약어 마침표 보존
-  let safe = tMerged
-    .replace(/\b([A-Za-z])\.([A-Za-z])/g, '$1\u00B7$2')
-    .replace(/\b(s\/p|r\/o|op|Lt|Rt|Pf|Dr|No|vs)\./gi, '$1\u00B7')
-    .replace(/(\d)\.(\d)/g, '$1\u00B7$2');
-  
-  // 문장 분리: 줄바꿈 우선, 마침표+공백 보조
-  const sentences = safe
-    .split(/\n/)
-    .flatMap(line => line.split(/\.\s(?=[가-힣A-Z])/))
-    .map(s => s.replace(/\u00B7/g, '.').replace(/^\s*[#\*\-\d\.\)]+\s*/, '').trim())
-    .filter(s => {
-      if (s.length < 5) return false;
-      if (noiseRe.test(s)) return false;
-      if (sigRe.test(s)) return false;
-      if (labRe.test(s)) return false;
-      // 소견성 어미 필터 (액션 키워드 없으면 제거)
-      const opinionRe = /것\s*같습니다|생각해\s*볼\s*수|막막한|보입니다$|됩니다$|있습니다$|없습니다$|에$|면\s*있어$|있었던\s*분|이었고|악화되어|설명되며|compression|myelopathy|너무\s*괜찮아서|제가\s*보기에는|송구하오나|이어가겠|바탕으로\s*이후/;
-      const actionKw = /의뢰|협진|부탁|추천|시행|투약|처방|투여|중단|시작|증량|감량|입원|전원|외래|OPD|f\/u|검사|채혈|culture/i;
-      if (opinionRe.test(s) && !actionKw.test(s)) return false;
-      // 배경·경과 서술 필터 (과거 병력, 소견 설명)
-      const bgRe = /있었던\s*분|분으로|이었고|악화되어|내원하였|설명되며|없어$|없어\s/;
-      if (bgRe.test(s) && !/의뢰|협진|부탁|입원.*시키|시행|투약|처방/i.test(s)) return false;
-      return true;
-    });
-  
-  // 액션 vs 소견 분류
+  // ── Step 1: 줄 단위로 번호 구조 파악 후 블록 병합 ──
+  const rawLines = t.split(/\n/).map(l => l.trimEnd());
+  const blocks = []; // { level, text, children[] }
+  const topNumRe = /^\s*(\d+)\s*[\.\)]\s*/;       // 1. 또는 1)
+  const subNumRe = /^\s*(\d+)\s*\)\s*/;            // 하위 1) 2) 3) (들여쓰기 있을 때)
+  const indentRe = /^\s{3,}/;                       // 3칸 이상 들여쓰기 = 하위
+  let currentBlock = null;
+
+  let lastWasEmpty = false;
+  rawLines.forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed) { lastWasEmpty = true; return; }
+    if (noiseRe.test(trimmed) || sigRe.test(trimmed) || labRe.test(trimmed)) return;
+
+    const isTopNum = topNumRe.test(trimmed) && !indentRe.test(line);
+    const isSubNum = (subNumRe.test(trimmed) && indentRe.test(line)) || (subNumRe.test(trimmed) && currentBlock && !lastWasEmpty);
+    const isIndented = indentRe.test(line) && currentBlock && !lastWasEmpty;
+
+    if (isTopNum) {
+      // 새 상위 블록 시작
+      currentBlock = { text: trimmed.replace(topNumRe, '').trim(), children: [] };
+      blocks.push(currentBlock);
+    } else if ((isSubNum || isIndented) && currentBlock) {
+      // 하위 내용 → 현재 블록에 병합
+      const cleaned = trimmed.replace(subNumRe, '').trim();
+      // 번호 없는 들여쓰기 줄 → 직전 child에 이어붙이기
+      if (!subNumRe.test(trimmed) && isIndented && currentBlock.children.length > 0) {
+        currentBlock.children[currentBlock.children.length - 1] += ' ' + cleaned;
+      } else {
+        currentBlock.children.push(cleaned);
+      }
+    } else {
+      // 번호 없는 독립 문장
+      currentBlock = null;
+      blocks.push({ text: trimmed, children: [] });
+    }
+    lastWasEmpty = false;
+  });
+
+  // ── Step 2: 블록별로 병합 또는 분리 ──
+  const actionKwMerge = /의뢰|협진|부탁|추천|시행|투약|처방|투여|중단|시작|증량|감량|입원|전원|외래|OPD|f\/u|검사|채혈|culture|loading|스테로이드|바로|dexamethasone/i;
+  const bgHeader = /괜찮아서|막막한|보기에는|송구하오나|어떻게\s*해야/;
+  const childNoise = /문의\s*주시면|이어가겠|바탕으로|있을지$|가늠할\s*수|것이\s*있을지/;
+
+  const mergedSentences = [];
+  blocks.forEach(b => {
+    if (b.children.length === 0) {
+      mergedSentences.push(b.text);
+      return;
+    }
+    // 상위 문장이 배경/수식이면 → 액션 children만 독립 추출
+    if (bgHeader.test(b.text)) {
+      b.children.forEach(c => {
+        if (!childNoise.test(c) && actionKwMerge.test(c) && c.length > 5) {
+          mergedSentences.push(c);
+        }
+      });
+      // 상위 문장에서 액션 키워드 포함 시 상위도 추가
+      if (actionKwMerge.test(b.text)) mergedSentences.push(b.text);
+    } else {
+      // 상위 문장이 액션성 → 하위 중 액션만 병합
+      const actionChildren = b.children.filter(c => actionKwMerge.test(c) && !childNoise.test(c));
+      if (actionChildren.length > 0) {
+        mergedSentences.push(b.text + ' — ' + actionChildren.join(', '));
+      } else {
+        mergedSentences.push(b.text);
+      }
+    }
+  });
+
+  // ── Step 3: 소견 vs 액션 분류 ──
   const actionRe = {
-    "배치":      { re: /(?:전원|병상|전과|전동|입원)/, neg: /하시게되면|하게되면|경우|했으나|하였으나|내원|계획\s*중/, icon: "🏥" },
+    "배치":      { re: /입원|전원|병상|전과|전동/i, neg: /하시게되면|하게되면|경우|했으나|하였으나|ER로\s*내원|계획\s*중이었/i, icon: "🏥" },
     "완화의료":  { re: /호스피스|hospice|완화|연명|POLST|DNR/i, icon: "🕊️" },
     "수술/시술": { re: /수술|op\b|시술|stent|insertion|기관지내시경|traction|교체|제거술/i, neg: /시행하였|시행했|시행된|결과/i, icon: "🔪" },
     "항암":      { re: /chemo|항암/i, icon: "💊" },
-    "투약":      { re: /투약|약물|처방|투여|infusion|CRRT|aspirin|LMWH|supplement|irrigation|NPO|시작|증량|감량|중단/i, neg: /유지되고|유지되어|유지중|투여하였|투여했|투약하였/i, icon: "💊" },
-    "외래":      { re: /외래|OPD|f\/u|follow/i, neg: /내원하였|ER로\s*내원|응급실.*내원|내원한/, icon: "📅" },
-    "협진":      { re: /의뢰|협진|consult|부탁|추천드립니다/i, icon: "🏥" },
+    "투약":      { re: /투약|약물|처방|투여|infusion|CRRT|aspirin|LMWH|supplement|irrigation|NPO|loading|스테로이드|dexamethasone/i, neg: /유지되고|유지되어|유지중|투여하였|투여했|투약하였/i, icon: "💊" },
+    "외래":      { re: /외래|OPD|f\/u|follow/i, neg: /내원하였|ER로\s*내원|응급실.*내원|내원한/i, icon: "📅" },
+    "협진":      { re: /의뢰|협진|consult/i, icon: "🏥" },
     "검사":      { re: /검체|culture|채혈|검사|panel|stain|AFB|PSA|시행해/i, neg: /시행하였|시행했|시행된|결과|소견상/i, icon: "🔬" },
-    "지시":      { re: /exam|평가|loading|스테로이드|확인|가늠|사항/i, icon: "📋" }
+    "지시":      { re: /exam|평가|확인|모니터/i, icon: "📋" }
   };
-  
-  // 경어/수식어 축약 함수
+
+  // 경어/수식어 축약
   const condense = (s) => s
+    .replace(/^.*송구하오나\s*/g, '')
+    .replace(/^.*막막한\s*면이\s*있어[,\s]*/g, '')
+    .replace(/^대한\s*평가를\s*어떻게\s*해야\s*할지\s*/g, '')
     .replace(/해\s*보시기\s*바랍니다/g, '').replace(/해\s*주시기\s*바랍니다/g, '')
     .replace(/하시기\s*바랍니다/g, '').replace(/바랍니다/g, '')
     .replace(/부탁\s*드립니다/g, '').replace(/드리겠습니다/g, '')
@@ -1191,8 +1236,14 @@ if (isPsectionMode) {
     .replace(/것으로\s*사료됩니다/g, '').replace(/사료됩니다/g, '')
     .replace(/생각됩니다/g, '').replace(/보입니다/g, '')
     .replace(/\s+/g, ' ').trim().replace(/[,;．。\.]\s*$/, '');
-  
-  sentences.forEach((s, idx) => {
+
+  // 배경/인사 필터
+  const bgFilter = /있었던\s*분|분으로,|계획\s*중이었고|내원하였습니다|문의\s*주시면|이어가겠|바탕으로\s*이후|홍준식|배상/;
+
+  mergedSentences.forEach((s, idx) => {
+    if (s.length < 5) return;
+    if (bgFilter.test(s)) return;
+
     let matched = false;
     for (const [cat, cfg] of Object.entries(actionRe)) {
       if (cfg.re.test(s) && !(cfg.neg && cfg.neg.test(s))) {
@@ -1202,31 +1253,27 @@ if (isPsectionMode) {
           r.opdItems.push(selectedDept + " " + detail);
         }
         r.instructions.push({
-          id: "p_" + idx,
-          task: selectedDept,
-          detail: detail,
-          icon: cfg.icon,
-          category: cat,
-          blockIdx: 0
+          id: "p_" + idx, task: selectedDept, detail: detail,
+          icon: cfg.icon, category: cat, blockIdx: 0
         });
         matched = true;
         break;
       }
     }
-    if (!matched && s.length > 5) {
-      r.instructions.push({
-        id: "p_op_" + idx,
-        task: selectedDept,
-        detail: condense(s),
-        icon: "🔬",
-        category: "소견",
-        blockIdx: 0
-      });
+    // 액션 매칭 안 된 문장 → 소견으로 (임상 키워드 있을 때만)
+    if (!matched && s.length > 10) {
+      const clinicalRe = /compression|myelopathy|부작용|소견|진단|감별|가능성|lymphoma|chemo|항암|병변|lesion/i;
+      if (clinicalRe.test(s)) {
+        r.instructions.push({
+          id: "p_op_" + idx, task: selectedDept, detail: condense(s),
+          icon: "🔬", category: "소견", blockIdx: 0
+        });
+      }
     }
   });
 
   // disposition 판별
-  if (/입원.*필요|adm.*추천|입원\s*추천/i.test(t)) r.disposition = "admission";
+  if (/입원|adm/i.test(t) && !/계획\s*중이었|입원\s*경과/i.test(t)) r.disposition = "admission";
   if (/타병원.*전원/i.test(t)) r.disposition = "transfer";
 
 
