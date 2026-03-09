@@ -1136,17 +1136,29 @@ if (isPsectionMode) {
   const sigRe = /\b[A-Z]{2,4}\s*(?:F\.|R\d|교수|올림|전임의|전공의)|^[가-힣]{2,4}\s*(배상|드림|올림)/;
   const labRe = /^[A-Z][A-Za-z\/\(\)]+\s+[\d\.]+$|^BUN\s|^Creatinine\s|^eGFR|^Na\(U\)|^CRP\s|^WBC\s|^Hb\s/;
   
- // 하위번호 병합
+// 하위번호 병합 (멀티라인 번호항목 이어붙이기)
   const rawLines = t.split(/\n/);
   const mergedLines = [];
-  let lastParent = null;
+  let currentBlock = null;
   for (const line of rawLines) {
     const isSubNum = /^\s{2,}[1-9]\)\s/.test(line);
     const isTopNum = /^\s*\d+\.\s/.test(line);
-    if (isTopNum) { lastParent = line.trim(); mergedLines.push(line); }
-    else if (isSubNum && lastParent) { /* 하위항목 스킵 */ }
-    else { mergedLines.push(line); }
+    const isBlank = line.trim() === '';
+    if (isTopNum) {
+      if (currentBlock !== null) mergedLines.push(currentBlock);
+      currentBlock = line.trim();
+    } else if (isSubNum) {
+      // 하위항목 스킵
+    } else if (isBlank) {
+      if (currentBlock !== null) { mergedLines.push(currentBlock); currentBlock = null; }
+      mergedLines.push(line);
+    } else if (currentBlock !== null) {
+      currentBlock += ' ' + line.trim(); // 멀티라인 이어붙이기
+    } else {
+      mergedLines.push(line);
+    }
   }
+  if (currentBlock !== null) mergedLines.push(currentBlock);
   const tMerged = mergedLines.join('\n');
 
   // 의학 약어 마침표 보존
