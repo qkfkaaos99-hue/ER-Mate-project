@@ -168,7 +168,7 @@
     <span class="hdr-logo" style="background:var(--blue);">EM</span>
     <span class="hdr-title">ER Mate</span>
     <!-- === 버전 === -->
-    <span class="hdr-sub">2026.03.10</span>
+    <span class="hdr-sub">2026.03.06</span>
   </div>
   <div class="hdr-right">
     <button class="btn-theme" onclick="showManual()" title="사용설명서" style="font-size:13px;">❓</button>
@@ -1213,7 +1213,7 @@ if (isPsectionMode) {
     "수술/시술": { re: /수술|op\b|시술|stent|insertion|기관지내시경|traction|교체|제거술/i, neg: /시행하였|시행했|시행된|결과/i, icon: "🔪" },
     "항암":      { re: /chemo|항암/i, icon: "💊" },
     "투약":      { re: /투약|약물|처방|투여|infusion|CRRT|aspirin|LMWH|supplement|irrigation|NPO|loading|스테로이드|dexamethasone/i, neg: /유지되고|유지되어|유지중|투여하였|투여했|투약하였/i, icon: "💊" },
-    "외래":      { re: /외래|OPD|f\/u|follow/i, neg: /내원하였|ER로\s*내원|응급실.*내원|내원한/i, icon: "📅" },
+    "외래":      { re: /외래|OPD|f\/u|follow/i, neg: /내원하였|ER로\s*내원|응급실.*내원|내원한|f\/u하며|f\/u\s*하며|치료중/i, icon: "📅" },
     "협진":      { re: /의뢰|협진|consult/i, icon: "🏥" },
     "검사":      { re: /검체|culture|채혈|검사|panel|stain|AFB|PSA|시행해/i, neg: /시행하였|시행했|시행된|결과|소견상/i, icon: "🔬" },
     "지시":      { re: /exam|평가|확인|모니터/i, icon: "📋" }
@@ -1251,6 +1251,8 @@ if (isPsectionMode) {
         if (detail.length < 5) break;
         if (cat === "외래") {
           r.opdItems.push(selectedDept + " " + detail);
+          matched = true;
+          break;
         }
         r.instructions.push({
           id: "p_" + idx, task: selectedDept, detail: detail,
