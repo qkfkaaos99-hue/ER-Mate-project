@@ -1132,12 +1132,25 @@ if (isPsectionMode) {
   r.departments = [selectedDept];
   
   // 노이즈 필터
-  const noiseRe = /선생님|안녕하세요|안녕하십니까|감사합니다|드림$|올림$|배상$/;
-  const sigRe = /\b[A-Z]{2,4}\s*(?:F\.|R\d|교수|올림|전임의|전공의)/i;
+ const noiseRe = /선생님|안녕하세요|안녕하십니까|감사합니다|드림$|올림$|배상$|배상\.|드림\./;
+  const sigRe = /\b[A-Z]{2,4}\s*(?:F\.|R\d|교수|올림|전임의|전공의)|^[가-힣]{2,4}\s*(배상|드림|올림)/;
   const labRe = /^[A-Z][A-Za-z\/\(\)]+\s+[\d\.]+$|^BUN\s|^Creatinine\s|^eGFR|^Na\(U\)|^CRP\s|^WBC\s|^Hb\s/;
   
+ // 하위번호 병합
+  const rawLines = t.split(/\n/);
+  const mergedLines = [];
+  let lastParent = null;
+  for (const line of rawLines) {
+    const isSubNum = /^\s{2,}[1-9]\)\s/.test(line);
+    const isTopNum = /^\s*\d+\.\s/.test(line);
+    if (isTopNum) { lastParent = line.trim(); mergedLines.push(line); }
+    else if (isSubNum && lastParent) { /* 하위항목 스킵 */ }
+    else { mergedLines.push(line); }
+  }
+  const tMerged = mergedLines.join('\n');
+
   // 의학 약어 마침표 보존
-  let safe = t
+  let safe = tMerged
     .replace(/\b([A-Za-z])\.([A-Za-z])/g, '$1\u00B7$2')
     .replace(/\b(s\/p|r\/o|op|Lt|Rt|Pf|Dr|No|vs)\./gi, '$1\u00B7')
     .replace(/(\d)\.(\d)/g, '$1\u00B7$2');
@@ -1152,6 +1165,10 @@ if (isPsectionMode) {
       if (noiseRe.test(s)) return false;
       if (sigRe.test(s)) return false;
       if (labRe.test(s)) return false;
+      // 소견성 어미 필터 (액션 키워드 없으면 제거)
+      const opinionRe = /것\s*같습니다|생각해\s*볼\s*수|막막한|보입니다$|됩니다$|있습니다$|없습니다$|습니다$/;
+      const actionKw = /의뢰|협진|부탁|추천|시행|투약|처방|투여|중단|시작|증량|감량|입원|전원|외래|OPD|f\/u|검사|채혈|culture/i;
+      if (opinionRe.test(s) && !actionKw.test(s)) return false;
       return true;
     });
   
