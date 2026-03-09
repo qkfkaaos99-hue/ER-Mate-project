@@ -1163,7 +1163,7 @@ if (isPsectionMode) {
   
   // 액션 vs 소견 분류
   const actionRe = {
-    "배치":      { re: /(?:전원|병상|전과|전동|입원)/, neg: /하시게되면|하게되면|경우|했으나|하였으나/, icon: "🏥" },
+    "배치":      { re: /(?:전원|병상|전과|전동|입원)/, neg: /하시게되면|하게되면|경우|했으나|하였으나|내원|계획\s*중/, icon: "🏥" },
     "완화의료":  { re: /호스피스|hospice|완화|연명|POLST|DNR/i, icon: "🕊️" },
     "수술/시술": { re: /수술|op\b|시술|stent|insertion|기관지내시경|traction|교체|제거술/i, neg: /시행하였|시행했|시행된|결과/i, icon: "🔪" },
     "항암":      { re: /chemo|항암/i, icon: "💊" },
