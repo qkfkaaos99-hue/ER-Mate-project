@@ -1197,7 +1197,7 @@ if (isPsectionMode) {
     .replace(/있어\s*보입니다/g, '가능성').replace(/것으로\s*판단됩니다/g, '')
     .replace(/것으로\s*사료됩니다/g, '').replace(/사료됩니다/g, '')
     .replace(/생각됩니다/g, '').replace(/보입니다/g, '')
-    .replace(/\s+/g, ' ').trim().replace(/[,;]\s*$/, '');
+    .replace(/\s+/g, ' ').trim().replace(/[,;．。\.]\s*$/, '');
   
   sentences.forEach((s, idx) => {
     let matched = false;
