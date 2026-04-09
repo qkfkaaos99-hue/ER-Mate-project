@@ -345,10 +345,17 @@ const BED_FLOW_TREE = {
   },
   reg_weekday: {
     q: "진료과 직접배정 대상인가요?",
-    help: "ICU / Sub ICU / Stroke unit / 입전의 / 소화기내과 / 95 / 38 / 응급병상",
+    help: "ICU / Sub ICU / Stroke unit",
     options: [
       {label:"예 (ICU·Sub ICU·Stroke 등)", next:"reg_direct_icu"},
-      {label:"예 (입전의·소화기·95·38·응급병상)", next:"reg_direct_er"},
+      {label:"아니오", next:"reg_er_bed_q"},
+    ]
+  },
+  reg_er_bed_q: {
+    q: "응급병상 배정이 가능한가요?",
+    help: "입전의 / 소화기내과 / 95 / 38 / IMG 응급병상",
+    options: [
+      {label:"예", next:"reg_direct_er"},
       {label:"아니오", next:"reg_blood_q"},
     ]
   },
@@ -412,16 +419,15 @@ const BED_FLOW_TREE = {
   },
   night_direct_q: {
     q: "진료과 직접배정 대상인가요?",
-    help: "ICU / Sub ICU / Stroke unit / 입전의 / 소화기내과 / 95 / 38 / 응급병상",
+    help: "ICU / Sub ICU / Stroke unit",
     options: [
       {label:"예 (ICU·Sub ICU·Stroke 등)", next:"reg_direct_icu"},
-      {label:"예 (입전의·소화기·95·38·응급병상)", next:"night_er_bed"},
-      {label:"아니오", next:"night_surgery_q"},
+      {label:"아니오", next:"night_er_bed"},
     ]
   },
   night_er_bed: {
     q: "응급병상 배정이 가능한가요?",
-    help: "⚠️ 판단 어려우면 주임/주치의/수간호사님께 확인",
+    help: "입전의 / 소화기내과 / 95 / 38 / IMG 응급병상 · ⚠️ 판단 어려우면 주임/주치의/수간호사님께 확인",
     options: [
       {label:"예", next:"reg_direct_er"},
       {label:"아니오·모름", next:"night_surgery_q"},
