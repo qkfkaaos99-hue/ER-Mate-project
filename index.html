@@ -238,7 +238,8 @@ Enter = 실행 / Shift+Enter = 줄바꿈"
 <strong>🏥 컨설트:</strong> 우측 과 선택 → 회신 중 지시사항 부분만 복사 붙여넣기!
     </div>
     <div style="margin-top:8px; display:flex; gap:6px;">
-      <button class="btn-ex" style="flex:1; padding:10px 8px; font-size:12px; font-weight:700; color:var(--blue); border-color:var(--blue);" onclick="showBedAssign()">🏥 병실배정 담당자 표</button>
+      <button class="btn-ex" style="flex:1; padding:10px 8px; font-size:12px; font-weight:700; color:var(--blue); border-color:var(--blue);" onclick="showBedAssign()">🏥 담당자 표</button>
+      <button class="btn-ex" style="flex:1; padding:10px 8px; font-size:12px; font-weight:700; color:var(--green); border-color:var(--green);" onclick="showBedFlow()">🔀 병실배정 의사결정</button>
     </div>
   </div>
 
@@ -262,6 +263,17 @@ Enter = 실행 / Shift+Enter = 줄바꿈"
       <div class="modal-body" id="bedAssignBody" style="padding:8px;"></div>
       <div style="padding:0 12px 12px;">
         <button class="btn-modal-ok" onclick="closeBedAssign()">닫기</button>
+      </div>
+    </div>
+  </div>
+  <div id="bedFlowPopup" class="overlay hidden" onclick="if(event.target===this)closeBedFlow()">
+    <div class="modal" style="max-width:500px;">
+      <div class="modal-hdr">🔀 병실배정 의사결정</div>
+      <div class="modal-body" id="bedFlowBody" style="padding:12px;"></div>
+      <div style="padding:0 12px 12px;display:flex;gap:6px;">
+        <button id="bedFlowBackBtn" class="btn-modal-ok" style="flex:1;background:var(--text2);" onclick="bedFlowBack()">← 이전</button>
+        <button class="btn-modal-ok" style="flex:1;background:var(--text2);" onclick="showBedFlow()">↻ 처음부터</button>
+        <button class="btn-modal-ok" style="flex:1;" onclick="closeBedFlow()">닫기</button>
       </div>
     </div>
   </div>
@@ -312,6 +324,185 @@ const BED_ASSIGN_CONTACTS = [
   {name:"박유나",tel:"3163",depts:["GS"]},
   {name:"박준우",tel:"2738",depts:["NP"]},
 ];
+
+// 병실배정 의사결정 트리 (기준: 절차안내 2026.2.9.)
+const BED_FLOW_TREE = {
+  root: {
+    q: "지금 어느 시간대인가요?",
+    help: "평일/주말·공휴일 및 시각에 따라 절차가 달라집니다",
+    options: [
+      {label:"평일 9A~6P (정규)", next:"reg_weekday"},
+      {label:"평일 6P~익일 6A (야간)", next:"night"},
+      {label:"토/공휴일 (내일도 주말/공휴일)", next:"holiday_normal"},
+      {label:"토/공휴일 (내일이 평일)", next:"holiday_last"},
+      {label:"6A~9A", next:"dead_zone"},
+    ]
+  },
+  dead_zone: {
+    result: "🚫 병상 배정 업무 없음",
+    desc: "6A~9A는 병동 정리 시간입니다. 9A 이후 원무1과 배정 절차로 진행하세요.",
+    actions: []
+  },
+  reg_weekday: {
+    q: "진료과 직접배정 대상인가요?",
+    help: "ICU / Sub ICU / Stroke unit / 입전의 / 소화기내과 / 95 / 38 / 응급병상",
+    options: [
+      {label:"예 (ICU·Sub ICU·Stroke 등)", next:"reg_direct_icu"},
+      {label:"예 (입전의·소화기·95·38·응급병상)", next:"reg_direct_er"},
+      {label:"아니오", next:"reg_blood_q"},
+    ]
+  },
+  reg_direct_icu: {
+    result: "✅ 진료과에서 직접 배정",
+    desc: "ICU / Sub ICU / Stroke unit은 진료과에서 직접 배정합니다.",
+    actions: [
+      "진료과에 배정 확인",
+      "입원지시 옆에 배정 시간/병동 기록 (예: 15:15(1151904))"
+    ]
+  },
+  reg_direct_er: {
+    result: "✅ 응급병상 연락 후 배정",
+    desc: "입전의·소화기내과·95·38·IMG 응급병상은 응급병상 체계로 배정합니다.",
+    actions: [
+      "해당 응급병상에 연락",
+      "배정 후 입원지시 옆에 시간/병동 기록 (예: 15:15(1151904))"
+    ]
+  },
+  reg_blood_q: {
+    q: "혈액내과 환자인가요?",
+    help: "예: 101/111 등 (3~5월 장소정)",
+    options: [
+      {label:"예 (혈액내과)", next:"reg_blood"},
+      {label:"아니오", next:"reg_wonmu"},
+    ]
+  },
+  reg_blood: {
+    result: "✅ 혈액내과 CPN에 배정요청",
+    desc: "혈액내과 진료과 내 배정담당자(CPN)에게 연락합니다.",
+    actions: [
+      "CPN 연락 → 배정요청",
+      "입원지시 옆에 시간/병동 기록 (예: 15:15(1151904))"
+    ]
+  },
+  reg_wonmu: {
+    result: "✅ 원무1과 / 외과사무실에 배정요청",
+    desc: "정규시간 기본 경로입니다.",
+    actions: [
+      "원무1과(내과계) 또는 외과사무실에 배정요청",
+      "중증/비중증 표기",
+      "1개 진료과 내 2명 이상 시 순위 표기",
+      "감염/격리 정보 포함",
+      "진료과 혈액/종양·산과/부인과 구분",
+      "배정 후 입원지시 옆에 시간/병동 기록 (예: 15:15(1151904))"
+    ],
+    warn: "9A/3P 전체 list는 담당 HN(9A)·전원전담(3P)이 일괄 메일 송부. 그 이후 추가분은 원무1과 각 진료과 담당에게 메신저(~6P)."
+  },
+  night: {
+    q: "현재 시각이 5A30 이전인가요?",
+    help: "5A30까지 응급수납 요청 가능 / 병동은 5A59까지 통보",
+    options: [
+      {label:"예 (6P~5A30)", next:"night_direct_q"},
+      {label:"아니오 (5A30 이후)", next:"night_late"},
+    ]
+  },
+  night_late: {
+    result: "⏸ 병상배정 HOLD",
+    desc: "5A30 이후는 응급수납 요청 불가. 9A 원무1과 정규 절차로 진행합니다.",
+    actions: ["9A에 원무1과 정규 배정 절차로 이어서 진행"]
+  },
+  night_direct_q: {
+    q: "진료과 직접배정 대상인가요?",
+    help: "ICU / Sub ICU / Stroke unit / 입전의 / 소화기내과 / 95 / 38 / 응급병상",
+    options: [
+      {label:"예 (ICU·Sub ICU·Stroke 등)", next:"reg_direct_icu"},
+      {label:"예 (입전의·소화기·95·38·응급병상)", next:"night_er_bed"},
+      {label:"아니오", next:"night_surgery_q"},
+    ]
+  },
+  night_er_bed: {
+    q: "응급병상 배정이 가능한가요?",
+    help: "⚠️ 판단 어려우면 주임/주치의/수간호사님께 확인",
+    options: [
+      {label:"예", next:"reg_direct_er"},
+      {label:"아니오·모름", next:"night_surgery_q"},
+    ]
+  },
+  night_surgery_q: {
+    q: "외과 환자인가요?",
+    help: "야간에 외과는 중증/비중증 무관 전체가 응급수납 배정",
+    options: [
+      {label:"예 (외과)", next:"night_susu"},
+      {label:"아니오 (내과계)", next:"night_severe_q"},
+    ]
+  },
+  night_severe_q: {
+    q: "중증응급환자인가요?",
+    help: "환자 이름에 주황색 컬러박스가 있는 환자",
+    options: [
+      {label:"예 (중증응급)", next:"night_susu"},
+      {label:"아니오", next:"night_consult_q"},
+    ]
+  },
+  night_susu: {
+    result: "✅ 응급수납에 배정요청",
+    desc: "야간 응급수납 배정 경로입니다.",
+    actions: [
+      "입원지시 라벨을 응급수납에 전달 (방 없을 수도 있다는 설명)",
+      "라벨에 격리·진료과 정보 기록",
+      "세부 진료과 작성 (IMH 종양/혈액, 산과/부인과 구분)",
+      "감염/격리 정보 포함",
+      "수속 후 병동에 인계 가능시간 확인",
+      "입원지시 옆에 시간/병동 기록 (예: 15:15(1151904))"
+    ],
+    warn: "18시(토요일 3P): 주임간호사가 미배정 중증응급 이름 라벨 리스트 일괄 전달"
+  },
+  night_consult_q: {
+    q: "컨설트 회신에 입원요청이 명확한가요?",
+    help: "⚠️ 논의 필요 — 주임/주치의/수간호사님께 확인",
+    options: [
+      {label:"예 (명확)", next:"night_ward"},
+      {label:"아니오·모름", next:"night_hold"},
+    ]
+  },
+  night_ward: {
+    result: "✅ 본병상 배정 (조건부)",
+    desc: "가용병상 확인 후 배정합니다.",
+    actions: [
+      "본병상 배정순서 확인",
+      "가용병상 확인 후 배정",
+    ],
+    warn: "⚠️ 종양·잔여병상 배정 금지 / 연속배정 안 되게 주의"
+  },
+  night_hold: {
+    result: "⏸ 병상배정 HOLD",
+    desc: "정규시간 원무1과를 통해 입원요청 진행.",
+    actions: ["9A 정규시간에 원무1과 경로로 재진행"]
+  },
+  holiday_normal: {
+    q: "현재 시각이 5A30 이전인가요?",
+    help: "토/공휴일(내일도 주말/공휴일)은 야간 절차와 동일. 5A30까지 응급수납 요청 가능",
+    options: [
+      {label:"예 (6P~5A30)", next:"night_direct_q"},
+      {label:"아니오 (5A30 이후)", next:"night_late"},
+    ]
+  },
+  holiday_last: {
+    q: "현재 시각이 어느 구간인가요?",
+    help: "마지막날: 9A~2P 원무1과 / 3P 이후 응급수납",
+    options: [
+      {label:"9A~2P", next:"holiday_last_am"},
+      {label:"3P 이후", next:"holiday_normal"},
+    ]
+  },
+  holiday_last_am: {
+    result: "✅ 원무1과 배정 (마지막날 오전)",
+    desc: "9A 전원전담이 전체 list 송부 → 9A~2P 원무1과 배정.",
+    actions: [
+      "원무1과에 배정요청",
+      "입원지시 옆에 시간/병동 기록 (예: 15:15(1151904))"
+    ]
+  },
+};
 const EXAMPLES=[{label:"간단퇴원",text:"routine w/u상 특이소견 없어서 r/o URI\nD/C, IMHO opd f/u as scheduled"},{label:"교육포함퇴원",text:"[입원결과]\n퇴원\n[향후계획]\n호흡곤란 진행, 객혈 등 있으면 ER 재내원 교육함.\n산소포화도 측정 잘 하시도록함."},{label:"컨설트답변",text:"1. 귀과적으로 출혈의 위험성 높지 않다면, LMWH 단기간 유지, 추후 감량, 중단을 추천드립니다. 이에 대해서는 추후 신경과 외래로 FU 해주십시오.\n2. Sacral insufficiency fracture에 대해서는 정형외과 협진 추천드립니다.\n3. 신경과적으로는 LMWH 투약 유지한다면 aspirin 투약을 지속할 이유는 없을 것으로 판단합니다."},{label:"GS입원+OP",text:"GS adm, NPO\nOP 내일 1st"},{label:"CCU입원",text:"CARD adm to CCU, CAG 예정\nlab/EKG 확인"},{label:"전원",text:"전원, 00병원 NS로\nCT/MRI CD 복사 필요"},{label:"ERCP입원",text:"GI adm, ERCP 시행 예정, NPO 유지\nENDO OPD f/u 1개월"}];
 
 let activeTitle = null; // 검색 모드용 타이틀 변수
@@ -838,39 +1029,20 @@ const GUIDE_DB = {
     keywords: /병실배정|병실|배정|입원.*배정|원무.*배정|중증응급/i,
     icon: "🏥",
     items: [
-      {cat:"중증응급환자란",txt:"환자 이름에 주황색 컬러박스가 있는 환자"},
-      {cat:"개요",txt:"9A~6P: 원무1과 배정 (중증응급 포함 모든 입원지시)"},
-      {cat:"개요",txt:"6P~익일6A: 응급수납 배정 (중증응급환자 단, 외과는 모든환자). 5A30까지 요청/병동은 5A59까지 통보"},
-      {cat:"직접배정",txt:"ICU/Sub ICU/Stroke unit → 진료과에서 직접 배정 (동일)"},
-      {cat:"직접배정",txt:"입전의/소화기내과/95/38 응급병상 입원체계는 동일"},
-      {cat:"직접배정",txt:"혈액내과(ex.101/111) CPN 연락 (3~5월 장소정)"},
-      {cat:"평일정규",txt:"9A/3P: 입원지시 전체 list 원무1과 및 외과사무실 메일 송부 (격리/ 담당 9A:HN, 3P 전원전담 → 담당간호사 메신저 or 파워텔로 연락을 예정)"},
-      {cat:"평일정규",txt:"9A 이후 추가 나는 입원지시는 원무1과 각 진료과 담당에게 메신저 하기 (~6P)"},
+      {cat:"의사결정 트리",txt:"__BED_FLOW_BTN__"},
       {cat:"병실배정 담당자",txt:"__BED_ASSIGN_BTN__"},
-      {cat:"의사소통",txt:"원무1과 연락 & 병실 배정 받은 다음에 입원지시 옆에 시간 등으로 기록 → 의사소통 위해 중요!!"},
-      {cat:"야간/공휴일",txt:"18시: 중증응급중 병실 배정 안된환자 이름 라벨 리스트 보내기 (주임간호사) (토요일 3P)"},
-      {cat:"야간/공휴일",txt:"19시~: ① 새로난 입원지시 확인 ② 중증응급 여부 확인 (응급병상 고려)"},
-      {cat:"야간/공휴일",txt:"③ 중증응급진단명 환자(외과는 모두)라면 응급수납에 입원지시 라벨 돌려서 보내기 (방 확인차원으로 없을수도 있다는 설명 필요, 라벨에 격리, 진료과 정보등 적어서 보내기)"},
-      {cat:"야간/공휴일",txt:"④ 수속 후 병동에 인계 가능시간 확인 후 인계"},
-      {cat:"토/공휴일 마지막날",txt:"토요일/공휴일 마지막 날에 원무1과 부분 출근 → 9A 전원전담이 전체 list 송부 → 9A~2P: 원무1과 배정 → 3P 이후 응급수납 배정(야간/공휴일 절차)"},
-      {cat:"기타",txt:"1인실/2인실/간호간병 선호도 지정 불가 (익일 전동하면서 반영될 수는 있으나 확답 못함)"},
-      {cat:"기타",txt:"6A~9A는 병동 정리를 위해 병상 배정 업무 없음"},
-      {cat:"기타",txt:"배정 받으면 입원지시 옆에 배정 받은 시간/병동 쓰기 (ex. 1515(1151904))"},
-      {cat:"기타",txt:"진료과 혈액/종양 산과/부인과 등 구분 필요"},
-      {cat:"정규외",txt:"[정규 외 시간(원무1과 부재일때, 단 7~9am는 배정안함)] 진료과 배정 병상 대상인가?(ICU, sub ICU 등) → YES → 진료과 직접 배정"},
-      {cat:"정규외",txt:"[정규 외] 응급병상 배정 가능한가?(내과38, 입전의95응급중앙, IMG응급감사) → YES → 응급병상 연락 후 배정"},
-      {cat:"정규외",txt:"[정규 외] 외과? → YES → 응급수납에 배정요청 (세부진료과 작성: IMH종양/혈액, 산과/부인과 구분, 감염/격리정보 포함)"},
-      {cat:"정규외",txt:"[정규 외] 중증응급인가? → YES → 응급수납에 배정요청"},
-      {cat:"정규외",txt:"[정규 외] 컨설트 회신에서 입원요청 명확(논의필)? → YES → 본병상 배정순서 및 가용병상 확인, 가능 시 배정 (종양, 잔여병상 배정금지/연속배정 안되게)"},
-      {cat:"정규외",txt:"[정규 외] 위 모두 NO → 병상배정 HOLD, 정규시간 원무1과 통한 입원요청"},
-      {cat:"정규시간",txt:"[정규 시간(토/공휴일 중 원무1과 출근포함)] 진료과 배정 병상 대상? → YES → 진료과 직접 배정"},
-      {cat:"정규시간",txt:"[정규 시간] 응급병상 배정 가능? → YES → 응급병상 연락 후 배정"},
-      {cat:"정규시간",txt:"[정규 시간] 잠내과? → YES → 혈액내과 진료과 내 배정담당자(CPN) 배정요청"},
-      {cat:"정규시간",txt:"[정규 시간] 그 외 → '원무1과/외과사무실'에 배정요청 (중증/비중증 표기, 1개 진료과 내 2명이상 시 순위표기, 감염/격리정보 포함)"},
-      {cat:"주임간호사 정규업무",txt:"평일 오후6시, 기타 원무1과 당직일 오후3시: (미배정) 중증응급 환자 일괄 → '응급수납'에 배정요청 · 잔여병상 활용 위함"},
-      {cat:"수간호사/전원전담 정규업무",txt:"평일 오전9시·오후3시, 기타 원무1과 당직일 오전9시: (미배정) 입원지시환자 명단 일괄 → '원무1과'에 메일발송"},
-      {cat:"Trouble shooting",txt:"순번표대로 배정된 병실이 1인실이고 환자가 거부될 경우: 다음날 정규시간 배정요 미루고, 뒷순위 병동으로 배정하지 않는다"},
-      {cat:"Trouble shooting",txt:"중증응급 아닌 환자 2명 이상, 본병상 1개월 때: 진료과 협의 뒤 비정보류"},
+      {cat:"중증응급환자란",txt:"환자 이름에 주황색 컬러박스가 있는 환자"},
+      {cat:"상시 참고",txt:"배정 받으면 입원지시 옆에 배정 받은 시간/병동 쓰기 (예: 15:15(1151904)) → 의사소통 위해 중요!!"},
+      {cat:"상시 참고",txt:"진료과 혈액/종양·산과/부인과 등 구분 필요"},
+      {cat:"상시 참고",txt:"1인실/2인실/간호간병 선호도 지정 불가 (익일 전동하며 반영될 수는 있으나 확답 못함)"},
+      {cat:"상시 참고",txt:"6A~9A는 병동 정리를 위해 병상 배정 업무 없음"},
+      {cat:"평일 정규 루틴",txt:"9A/3P: 입원지시 전체 list 원무1과·외과사무실 메일 송부 (9A: HN, 3P: 전원전담)"},
+      {cat:"평일 정규 루틴",txt:"9A 이후 추가 입원지시는 원무1과 각 진료과 담당에게 메신저 (~6P)"},
+      {cat:"야간/공휴일 루틴",txt:"18시(토요일 3P): 주임간호사가 미배정 중증응급 환자 이름 라벨 리스트 전달"},
+      {cat:"주임간호사 정규업무",txt:"평일 18시(원무1과 당직일 15시): 미배정 중증응급 일괄 → 응급수납 배정요청 (잔여병상 활용)"},
+      {cat:"수간호사/전원전담 정규업무",txt:"평일 9시·15시(원무1과 당직일 9시): 미배정 입원지시 명단 일괄 → 원무1과 메일 발송"},
+      {cat:"Trouble shooting",txt:"순번표대로 배정된 병실이 1인실이고 환자 거부 시: 다음날 정규시간 배정으로 미루고, 뒷순위 병동 배정 안 함"},
+      {cat:"Trouble shooting",txt:"중증응급 아닌 환자 2명 이상·본병상 1개월 때: 진료과 협의 후 배정보류"},
     ]
   },
   "chest tube": {
@@ -1734,6 +1906,10 @@ function render(){
 }
 
 function rItem(item){
+  // 병실배정 의사결정 트리 버튼
+  if(item.task === '__BED_FLOW_BTN__'){
+    return `<div class="row" onclick="showBedFlow()" style="cursor:pointer"><div class="row-check"><div class="cb" style="background:var(--green);border-color:var(--green)"><svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="var(--svg-check)" stroke-width="2" stroke-linecap="round"/></svg></div></div><div class="row-icon">🔀</div><div class="row-content"><div class="row-task" style="color:var(--green)">병실배정 의사결정 (클릭 시작)</div><div class="row-detail">[의사결정 트리] 시간대·상황 선택 → 해야 할 일 자동 안내</div></div></div>`;
+  }
   // 병실배정 담당자 버튼
   if(item.task === '__BED_ASSIGN_BTN__'){
     return `<div class="row" onclick="showBedAssign()" style="cursor:pointer"><div class="row-check"><div class="cb" style="background:var(--blue);border-color:var(--blue)"><svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="var(--svg-check)" stroke-width="2" stroke-linecap="round"/></svg></div></div><div class="row-icon">📋</div><div class="row-content"><div class="row-task" style="color:var(--blue)">병실배정 담당자 표 보기</div><div class="row-detail">[병실배정 담당자] 탭하면 담당자·연락처·진료과 표가 팝업됩니다</div></div></div>`;
@@ -1759,6 +1935,53 @@ function showBedAssign(){
   document.getElementById('bedAssignPopup').classList.remove('hidden');
 }
 function closeBedAssign(){document.getElementById("bedAssignPopup").classList.add("hidden");}
+let bedFlowStack = [];
+function showBedFlow(){
+  bedFlowStack = ['root'];
+  renderBedFlow();
+  document.getElementById('bedFlowPopup').classList.remove('hidden');
+}
+function closeBedFlow(){
+  document.getElementById('bedFlowPopup').classList.add('hidden');
+}
+function bedFlowGo(nextId){
+  bedFlowStack.push(nextId);
+  renderBedFlow();
+}
+function bedFlowBack(){
+  if(bedFlowStack.length>1){ bedFlowStack.pop(); renderBedFlow(); }
+}
+function renderBedFlow(){
+  const id = bedFlowStack[bedFlowStack.length-1];
+  const node = BED_FLOW_TREE[id];
+  const backBtn = document.getElementById('bedFlowBackBtn');
+  backBtn.style.visibility = bedFlowStack.length>1 ? 'visible' : 'hidden';
+  let h = '';
+  if(node.q){
+    h += `<div style="font-size:15px;font-weight:700;color:var(--blue);margin-bottom:8px">${esc(node.q)}</div>`;
+    if(node.help) h += `<div style="font-size:12px;color:var(--text2);margin-bottom:12px;padding:8px;background:var(--bg-soft,rgba(128,128,128,.08));border-radius:6px">💡 ${esc(node.help)}</div>`;
+    h += '<div style="display:flex;flex-direction:column;gap:8px">';
+    node.options.forEach(opt=>{
+      h += `<button onclick="bedFlowGo('${opt.next}')" style="padding:12px;border:1.5px solid var(--blue);background:transparent;color:var(--blue);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;text-align:left">${esc(opt.label)}</button>`;
+    });
+    h += '</div>';
+  } else if(node.result){
+    h += `<div style="font-size:16px;font-weight:700;color:var(--green);margin-bottom:8px">${esc(node.result)}</div>`;
+    if(node.desc) h += `<div style="font-size:13px;color:var(--text);margin-bottom:12px;line-height:1.5">${esc(node.desc)}</div>`;
+    if(node.actions && node.actions.length){
+      h += '<div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px">📋 실행 항목</div>';
+      h += '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">';
+      node.actions.forEach(a=>{
+        h += `<div style="padding:8px 10px;background:var(--bg-soft,rgba(128,128,128,.08));border-left:3px solid var(--green);border-radius:4px;font-size:13px;line-height:1.4">${esc(a)}</div>`;
+      });
+      h += '</div>';
+    }
+    if(node.warn){
+      h += `<div style="padding:8px 10px;background:rgba(255,152,0,.12);border-left:3px solid #ff9800;border-radius:4px;font-size:12px;line-height:1.4">⚠️ ${esc(node.warn)}</div>`;
+    }
+  }
+  document.getElementById('bedFlowBody').innerHTML = h;
+}
 function resetAll(){location.reload();}
 function toggleTheme(){
   const isLight = document.body.classList.toggle('light');
