@@ -860,18 +860,19 @@ const GUIDE_DB = {
     keywords: /\bCIV\b|지속주입|continuous.*infusion|노에피|니카디핀|니트로|판토프라졸/i,
     icon: "💉",
     items: [
-      {cat:"처방",txt:"① NE(Norepinephrine) 4mcg/min = 15cc/hr — NE 3.2mg + D5W 196.8ml (total 200ml)"},
+      {cat:"처방",txt:"① NE(Norepinephrine)[Peri] 4mcg/min = 15cc/hr — NE 3.2mg + D5W 196.8ml (total 200ml)"},
+      {cat:"처방",txt:"① NE(Norepinephrine)[Central] 4mcg/min = 3cc/hr — NE 8mg + D5W 92ml (total 100ml)"},
       {cat:"처방",txt:"② NCD(Nicardipine) 1mg/hr = 5cc/hr — NCD 50mg + NS 200ml (total 250ml)"},
       {cat:"처방",txt:"③ NG(Nitroglycerin) 10mcg/min = 3cc/hr — NG 20mg + D5W 80ml (total 100ml)"},
       {cat:"처방",txt:"④ PPI(Pantoprazole/Nexium) 8mg/hr = 8cc/hr — PPI 80mg + NS 80ml (total 80ml)"},
-      {cat:"주의",txt:"⚠️ CIV 약물은 단독 line 사용 (PPI는 MF에 병용 가능)"},
+      {cat:"주의",txt:"⚠️ CIV 약물은 단독 line 사용 (PPI는 MF(N/S or D5W)에 병용 가능)"},
     ]
   },
   "고칼륨": {
     keywords: /고칼륨|hyperkalemia|K\+.*높|칼륨.*높|potassium.*high|K교정/i,
     icon: "⚡",
     items: [
-      {cat:"투약",txt:"Calcium gluconate IV"},
+      {cat:"투약",txt:"Calcium gluconate 1@ + N/S 50ml IV"},
       {cat:"투약",txt:"D50% + Humulin R IV"},
       {cat:"투약",txt:"30min / 1hr BST f/u"},
       {cat:"투약",txt:"Kalimate enema 병행 가능"},
@@ -911,7 +912,7 @@ const GUIDE_DB = {
     items: [
       {cat:"절차",txt:"ACTH 검사 오더 → 구조사 call: ACTH 검사 나가주세요"},
       {cat:"절차",txt:"구조사가 ACTH + Cortisol(basal) 채혈"},
-      {cat:"절차",txt:"Synacthen IV shooting → 포시로 밀어주기"},
+      {cat:"절차",txt:"Synacthen IV shooting → N/S flushing"},
       {cat:"절차",txt:"30min 후 Cortisol 채혈 → 60min 후 Cortisol 채혈"},
       {cat:"참고",txt:"ACTH stimulation test 검사오더는 초기상태가 맞음 (수가 없음)"},
     ]
@@ -920,7 +921,7 @@ const GUIDE_DB = {
     keywords: /투석|dialysis|HD|혈액투석|\bperm cath\b|인공신장/i,
     icon: "🫧",
     items: [
-      {cat:"동의서",txt:"Perm cath 삽입시술 동의서 + 응급혈액투석시술동의서 (PTA 경피경혈관성형술)"},
+      {cat:"동의서",txt:"Perm cath 삽입시술 동의서 + 응급혈액투석시술동의서 or 동정맥루풍선확장술(AVF PTA)동의서 "},
       {cat:"적응증",txt:"AVF malfunction이거나 없는 사람 → 응급투석"},
       {cat:"이송",txt:"혈관조영실 → X-ray실 → 투석(인공신장실) 이송등록"},
       {cat:"확인",txt:"투석실 전화: perm 꽂으러 가는데 XR 찍고 바로 투석 가도 되는지"},
@@ -1013,7 +1014,7 @@ const GUIDE_DB = {
       {cat:"퇴원약",txt:"비정규: 기송관 or 약국전화 후 보조원 SMS"},
     ]
   },
-  "접수취소": {
+  "환자접수취소": {
     keywords: /접수.*취소|취소.*접수|비등록/i,
     icon: "❌",
     items: [
@@ -1056,9 +1057,10 @@ const GUIDE_DB = {
     keywords: /chest.*tube|흉관삽관|흉관/i,
     icon: "🫁",
     items: [
-      {cat:"준비",txt:"Chest tube set"},
-      {cat:"준비",txt:"멸균생리식염수 채워넣기 + 멸균장갑"},
-      {cat:"준비",txt:"Suction 할 경우: suction line + 거즈"},
+      {cat:"동의서",txt:"흉관삽입술 동의서(좌,우 확인)"},
+      {cat:"준비",txt:"NA님에게 C-tube 준비, 사용할 tube(보통 24fr,28fr,Minitube 10fr중에 사용) 콜 "},
+      {cat:"준비",txt:"chest bottle에 멸균생리식염수 채워넣기 + 멸균장갑, chest bottle 걸이 투약실에서 네임라벨 두고 준비"},
+      {cat:"준비",txt:"Wall Suction 할 경우: PVC line + I자 커넥터,NA님에게 wall suction 20cm으로 준비 부탁"},
     ]
   },
   "post seizure": {
