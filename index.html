@@ -506,7 +506,7 @@ night_surgery_direct: {
   },
   holiday_normal: {
     q: "현재 시각이 5A30 이전인가요?",
-    help: "토/공휴일(내일도 주말/공휴일)은 야간 절차와 동일. 5A30까지 응급수납 요청 가능",
+    help: "일요일/공휴일은 야간 절차와 동일. 5A30까지 응급수납 요청 가능",
     options: [
       {label:"예 (6P~5A30)", next:"night_direct_q"},
       {label:"아니오 (5A30 이후)", next:"night_late"},
@@ -514,15 +514,15 @@ night_surgery_direct: {
   },
   holiday_last: {
     q: "현재 시각이 어느 구간인가요?",
-    help: "마지막날: 9A~2P 원무1과 / 3P 이후 응급수납",
+    help: "토요일: 9A~2P 원무1과 / 3P 이후 응급수납",
     options: [
       {label:"9A~2P", next:"holiday_last_am"},
       {label:"3P 이후", next:"holiday_normal"},
     ]
   },
   holiday_last_am: {
-    result: "✅ 원무1과 배정 (마지막날 오전)",
-    desc: "9A 전원전담이 전체 list 송부 → 9A~2P 원무1과 배정.",
+    result: "✅ 원무1과 배정 (토요일 오전)",
+    desc: "9A 전원전담이 전체 list 송부 → 토요일 9A~2P 원무1과 배정.",
     actions: [
       "원무1과에 배정요청",
       "입원지시 옆에 시간/병동 기록 (예: 15:15(1151904))"
