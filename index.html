@@ -434,14 +434,24 @@ const BED_FLOW_TREE = {
       {label:"아니오·모름", next:"night_surgery_q"},
     ]
   },
-  night_surgery_q: {
-    q: "외과 환자인가요?",
-    help: "야간에 외과는 중증/비중증 무관 전체가 응급수납 배정",
-    options: [
-      {label:"예 (외과)", next:"night_susu"},
-      {label:"아니오 (내과계)", next:"night_severe_q"},
-    ]
-  },
+ night_surgery_q: {
+  q: "외과계 환자인가요?",
+  help: "야간에 외과계(GS·NS·TS·OS 등)는 중증/비중증 무관 전체 응급수납 배정",
+  options: [
+    {label:"예 (외과계)", next:"night_surgery_type_q"},
+    {label:"아니오 (내과계)", next:"night_severe_q"},
+  ]
+},
+night_surgery_type_q: {
+  q: "어느 외과계열인가요?",
+  help: "진료과 확인 후 선택 — 배정 경로는 동일하나 라벨에 세부과 명시 필요",
+  options: [
+    {label:"일반외과 (GS)", next:"night_susu"},
+    {label:"신경외과 (NS)", next:"night_susu"},
+    {label:"흉부외과 (TS)", next:"night_susu"},
+    {label:"정형외과 (OS) / 기타 외과", next:"night_susu"},
+  ]
+},
   night_severe_q: {
     q: "중증응급환자인가요?",
     help: "환자 이름에 주황색 컬러박스가 있는 환자",
