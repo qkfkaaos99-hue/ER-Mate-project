@@ -331,11 +331,11 @@ const BED_FLOW_TREE = {
     q: "지금 어느 시간대인가요?",
     help: "평일/주말·공휴일 및 시각에 따라 절차가 달라집니다",
     options: [
-      {label:"평일 9A~6P (정규)", next:"reg_weekday"},
-      {label:"평일 6P~익일 6A (야간)", next:"night"},
-      {label:"토/공휴일 (내일도 주말/공휴일)", next:"holiday_normal"},
-      {label:"토/공휴일 (내일이 평일)", next:"holiday_last"},
-      {label:"6A~9A", next:"dead_zone"},
+      {label:"평일 정규 (9A~6P)", next:"reg"},
+      {label:"평일 비정규 (6P~익일 6A)", next:"night"},
+      {label:"토요일", next:"holiday_last"},
+      {label:"일요일/공휴일", next:"holiday_normal"},
+      {label:"5A30~9A", next:"dawn"},
     ]
   },
   dead_zone: {
