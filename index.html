@@ -335,12 +335,12 @@ const BED_FLOW_TREE = {
       {label:"평일 비정규 (6P~익일 6A)", next:"night"},
       {label:"토요일", next:"holiday_last"},
       {label:"일요일/공휴일", next:"holiday_normal"},
-      {label:"5A30~9A", next:"dawn"},
+      {label:"5A30~9A", next:"dead_zone"},
     ]
   },
   dead_zone: {
     result: "🚫 병상 배정 업무 없음",
-    desc: "6A~9A는 병동 정리 시간입니다. 9A 이후 원무1과 배정 절차로 진행하세요.",
+    desc: "5A30~9A는 병동 정리 시간입니다. 9A 이후 원무1과 배정 절차로 진행하세요.",
     actions: []
   },
   reg_weekday: {
