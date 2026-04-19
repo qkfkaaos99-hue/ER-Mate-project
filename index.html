@@ -307,10 +307,39 @@ Enter = 실행 / Shift+Enter = 줄바꿈"
 // - 상태 변수: activeTitle, cl, cs, cp, ci
 // ==========================================
 
-const MANDATORY={discharge:[{id:"m_d1",task:"퇴원약 확인",detail:"정규:응급약국 보호자직접수령 / 비정규:기송관or보조원SMS",icon:"💊"},{id:"m_d2",task:"남은약 반납",detail:"반납용지+약→소독물실+60삐록 / 접수만된약→약국82)2592전화취소",icon:"↩️"},{id:"m_d3",task:"Line 제거",detail:"IV line 등 제거",icon:"💉"},{id:"m_d4",task:"퇴원간호기록지 전달",detail:"수납 전달",icon:"📄"},{id:"m_d5",task:"응급실퇴실간호기록",detail:"퇴실일시=간호기록'퇴원함'시간",icon:"✍️"},{id:"m_d6",task:"퇴원 서류 확인",detail:"진단서·입원사실증명서 등 필요서류 확인",icon:"📑"},{id:"m_d7",task:"침상정리",detail:"#59삐록, 케이블·이름표·쓰레기정리",icon:"🧹"}],admission:[{id:"m_a1",task:"입원지시 확인",detail:"내과→EMO / 외과→진료과직접발행",icon:"📋"},{id:"m_a2",task:"병실배정",detail:"정규(9A~6P): 원무1과 배정 / 비정규(6P~익일6A): 응급수납 배정(중증응급·외과 전체). ICU/Sub ICU/Stroke unit→진료과 직접 배정. 입원지시 옆에 시간 기록!",icon:"🛏️"},{id:"m_a3",task:"입원수속 안내",detail:"보호자에게 입원지시라벨→응급원무수납안내",icon:"🏥"},{id:"m_a4",task:"약 반납 확인",detail:"남은약 반납처리",icon:"↩️"},{id:"m_a5",task:"전과전동기록지",detail:"인계전 올려놓기",icon:"📄"},{id:"m_a6",task:"인계",detail:"검체·pen insulin등 함께인계. 수혈남으면 병동알리기",icon:"🤝"},{id:"m_a7",task:"이송등록",detail:"퇴실전 미리등록!(이름빠지면 이송못함)",icon:"🚶"},{id:"m_a8",task:"응급실퇴실간호기록",detail:"처치·검사·오더 재확인후 작성",icon:"✍️"},{id:"m_a9",task:"침상정리",detail:"#59삐록, 케이블·이름표정리",icon:"🧹"}],transfer:[{id:"m_t1",task:"전원동의서",detail:"주치의및의뢰한각과",icon:"📝"},{id:"m_t2",task:"전원소견서",detail:"이송수단·병원이름. 정규:전원전담간호사",icon:"📄"},{id:"m_t3",task:"의무기록복사",detail:"전원전담간호사",icon:"📋"},{id:"m_t4",task:"CD/DVD복사",detail:"비정규:PACS실82)3077→SMS보조원수령",icon:"💿"},{id:"m_t5",task:"전원회신확인",detail:"진료협력센터경유여부확인",icon:"📞"},{id:"m_t6",task:"전원 서류 확인",detail:"진단서·입원사실증명서 등 필요서류 확인",icon:"📑"},{id:"m_t7",task:"구급차안내",detail:"사설 기본 9~10만원 이상 (26년 수가 인상) / 채혈실#0896",icon:"🚑"},{id:"m_t8",task:"퇴실30분전V/S",detail:"문제시전원전담쌤알리기!",icon:"💓"},{id:"m_t9",task:"퇴원약확인",detail:"필요시퇴원약안내",icon:"💊"},{id:"m_t10",task:"외래예약확인",detail:"다음외래꼭확인!",icon:"📅"},{id:"m_t11",task:"응급실퇴실간호기록",detail:"작성&이름빼기",icon:"✍️"},{id:"m_t12",task:"침상정리",detail:"#59삐록정리",icon:"🧹"}]};
+const MANDATORY={discharge:[{id:"m_d1",task:"퇴원약 확인",detail:"정규:응급약국 보호자직접수령 / 비정규:기송관or보조원SMS",icon:"💊"},
+                            {id:"m_d2",task:"남은약 반납",detail:"반납용지+약→소독물실+60삐록 / 접수만된약→약국82)2592전화취소",icon:"↩️"},
+                            {id:"m_d3",task:"퇴원 서류 확인",detail:"진단서·입원사실증명서 등 필요서류 확인",icon:"📑"},
+                            {id:"m_d4",task:"Line 제거",detail:"IV line 등 제거",icon:"💉"},
+                            {id:"m_d5",task:"퇴원간호기록지 전달",detail:"수납 전달",icon:"📄"},
+                            {id:"m_d6",task:"응급실퇴실간호기록",detail:"퇴실일시=간호기록'퇴원함'시간",icon:"✍️"},
+                            {id:"m_d7",task:"침상정리",detail:"#59삐록, 케이블·이름표·쓰레기정리",icon:"🧹"}],
+                 admission:[{id:"m_a1",task:"입원지시 확인",detail:"내과→EMO / 외과→진료과직접발행",icon:"📋"},
+                            {id:"m_a2",task:"병실배정",detail:"정규(9A~6P): 원무1과 배정 / 비정규(6P~익일6A): 응급수납 배정(중증응급·외과 전체). ICU/Sub ICU/Stroke unit→진료과 직접 배정. 입원지시 옆에 시간 기록!",icon:"🛏️"},
+                            {id:"m_a3",task:"입원수속 안내",detail:"보호자에게 입원지시라벨→응급원무수납안내",icon:"🏥"},
+                            {id:"m_a4",task:"약 반납 확인",detail:"남은약 반납처리",icon:"↩️"},
+                            {id:"m_a5",task:"전과전동기록지",detail:"인계전 올려놓기",icon:"📄"},
+                            {id:"m_a6",task:"인계",detail:"검체·pen insulin등 함께인계. 수혈남으면 병동알리기",icon:"🤝"},
+                            {id:"m_a7",task:"이송등록",detail:"퇴실전 미리등록!(이름빠지면 이송못함)",icon:"🚶"},
+                            {id:"m_a8",task:"응급실퇴실간호기록",detail:"처치·검사·오더 재확인후 작성",icon:"✍️"},
+                            {id:"m_a9",task:"침상정리",detail:"#59삐록, 케이블·이름표정리",icon:"🧹"}],
+                 transfer:[{id:"m_t1",task:"전원동의서",detail:"주치의및의뢰한각과",icon:"📝"},
+                           {id:"m_t2",task:"전원소견서",detail:"이송수단·병원이름. 정규:전원전담간호사",icon:"📄"},
+                           {id:"m_t3",task:"의무기록복사",detail:"전원전담간호사",icon:"📋"},
+                           {id:"m_t4",task:"CD/DVD복사",detail:"비정규:PACS실82)3077→SMS보조원수령",icon:"💿"},
+                           {id:"m_t5",task:"전원회신확인",detail:"진료협력센터경유여부확인",icon:"📞"},
+                           {id:"m_t6",task:"전원 서류 확인",detail:"진단서·입원사실증명서 등 필요서류 확인",icon:"📑"},
+                           {id:"m_t7",task:"구급차안내",detail:"사설 기본 9~10만원 이상 (26년 수가 인상) / 채혈실#0896",icon:"🚑"},
+                           {id:"m_t8",task:"퇴실30분전V/S",detail:"문제시전원전담쌤알리기!",icon:"💓"},
+                           {id:"m_t9",task:"퇴원약확인",detail:"필요시퇴원약안내",icon:"💊"},
+                           {id:"m_t10",task:"외래예약확인",detail:"다음외래꼭확인!",icon:"📅"},
+                           {id:"m_t11",task:"응급실퇴실간호기록",detail:"작성&이름빼기",icon:"✍️"},
+                           {id:"m_t12",task:"침상정리",detail:"#59삐록정리",icon:"🧹"}]};
 
 const DEPT_NOTES={"GS":"정규:외과사무실/비정규:수납라벨→병동","NS":"교수님어레인지 확인필요"};
-const UNIT_CONSENTS={"ICU":"중환자실입실동의서","CCU":"심혈관내과중환자실 입실동의서","Stroke":"뇌졸중집중치료실동의서 (보호자 24hr 1인 상주 필수) ☏0309","LICU":"간집중치료실입실동의서 (보호자 24hr 1인 상주 필수, 114병동) ☏2670"};
+const UNIT_CONSENTS={"ICU":"중환자실입실동의서","CCU":"심혈관내과중환자실 입실동의서",
+                     "Stroke":"뇌졸중집중치료실동의서 (보호자 24hr 1인 상주 필수) ☏0309",
+                     "LICU":"간집중치료실입실동의서 (보호자 24hr 1인 상주 필수, 114병동) ☏2670"};
 
 // 병실배정 담당자 표 (기준 일자: 2026. 2. 9.)
 const BED_ASSIGN_CONTACTS = [
