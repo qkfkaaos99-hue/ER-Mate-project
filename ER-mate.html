@@ -535,9 +535,9 @@ night_surgery_direct: {
   },
   holiday_normal: {
     q: "현재 시각이 5A30 이전인가요?",
-    help: "일요일/공휴일은 야간 절차와 동일. 5A30까지 응급수납 요청 가능",
+    help: "일요일/공휴일은 종일 비정규(응급수납) 절차. 5A30까지 응급수납 요청 가능",
     options: [
-      {label:"예 (6P~5A30)", next:"night_direct_q"},
+      {label:"예 (~5A30)", next:"night_direct_q"},
       {label:"아니오 (5A30 이후)", next:"night_late"},
     ]
   },
