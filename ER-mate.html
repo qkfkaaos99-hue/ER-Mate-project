@@ -383,9 +383,9 @@ const BED_FLOW_TREE = {
   },
   reg_er_bed_q: {
     q: "응급병상 배정이 가능한가요?",
-    help: "입전의 / 소화기내과 / 95 / 38 / IMG 응급병상",
+    help: "입전의 / IMG 소화기내과(→112·114) / 95 / 38 응급병상",
     options: [
-      {label:"예", next:"reg_direct_er"},
+      {label:"예", next:"night_er_bed_accept"},
       {label:"아니오", next:"reg_blood_q"},
     ]
   },
@@ -458,9 +458,9 @@ const BED_FLOW_TREE = {
   },
   night_er_bed: {
     q: "응급병상 배정이 가능한가요?",
-    help: "입전의 / 소화기내과 / 95 / 38 / IMG 응급병상 · ⚠️ 판단 어려우면 주임/주치의/수간호사님께 확인",
+    help: "입전의 / IMG 소화기내과(→112·114) / 95 / 38 응급병상 · ⚠️ 판단 어려우면 주임/주치의/수간호사님께 확인",
     options: [
-      {label:"예", next:"reg_direct_er"},
+      {label:"예", next:"night_er_bed_accept"},
       {label:"아니오·모름", next:"night_surgery_q"},
     ]
   },
@@ -495,8 +495,67 @@ night_surgery_direct: {
     q: "중증응급환자인가요?",
     help: "환자 이름에 주황색 컬러박스가 있는 환자",
     options: [
-      {label:"예 (중증응급)", next:"night_susu"},
+      {label:"예 (중증응급)", next:"night_severe_dept_q"},
       {label:"아니오", next:"night_consult_q"},
+    ]
+  },
+  night_severe_dept_q: {
+    q: "혈액종양내과(IMHO) 환자인가요?",
+    help: "IMHO는 응급수납 경유 불가 — 병동 직접 연락",
+    options: [
+      {label:"예 (혈액종양내과)", next:"night_imho"},
+      {label:"아니오 (다른 내과계)", next:"night_susu"},
+    ]
+  },
+  night_imho: {
+    q: "병동에 연락해서 자리가 있나요?",
+    help: "해당 병동에 직접 연락하여 병상 여부 확인",
+    options: [
+      {label:"있음", next:"night_imho_admit"},
+      {label:"없음", next:"night_imho_wait"},
+    ]
+  },
+  night_imho_admit: {
+    result: "✅ 해당 병동 연락 후 배정",
+    desc: "혈액종양내과 병동에 입원 예정 인계 후 배정합니다.",
+    actions: [
+      "병동 간호사에게 입원 예정 인계",
+      "격리·감염 정보 함께 전달",
+      "입원지시 옆에 시간/병동 기록 (예: 15:15(1151904))",
+    ]
+  },
+  night_imho_wait: {
+    result: "⏸ 입원 대기",
+    desc: "혈액종양내과 병동 자리 없음 — 병상 날 때까지 대기합니다.",
+    actions: [
+      "입원 대기 상태로 유지",
+      "주임/주치의에게 상황 공유",
+    ]
+  },
+
+  night_er_bed_accept: {
+    q: "간호간병을 수락하나요?",
+    help: "환자/보호자가 간호간병 병동 입실을 수락하는지 확인",
+    options: [
+      {label:"수락", next:"night_er_bed_admit"},
+      {label:"거부", next:"night_er_bed_wait"},
+    ]
+  },
+  night_er_bed_admit: {
+    result: "✅ 해당 병동 연락 후 배정",
+    desc: "응급병상 있음 + 간호간병 수락 — 해당 병동에 직접 연락 후 배정합니다.",
+    actions: [
+      "해당 병동 간호사에게 입원 예정 인계",
+      "격리·감염 정보 함께 전달",
+      "입원지시 옆에 시간/병동 기록 (예: 15:15(1151904))",
+    ]
+  },
+  night_er_bed_wait: {
+    result: "⏸ 입원 대기",
+    desc: "응급병상 있으나 간호간병 거부 — 다른 병상 날 때까지 대기합니다.",
+    actions: [
+      "입원 대기 상태로 유지",
+      "주임/주치의에게 상황 공유",
     ]
   },
   night_susu: {
