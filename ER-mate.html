@@ -500,33 +500,33 @@ night_surgery_direct: {
     ]
   },
   night_severe_dept_q: {
-    q: "혈액종양내과(IMHO) 환자인가요?",
-    help: "IMHO는 응급수납 경유 불가 — 병동 직접 연락",
+    q: "혈액내과(IMH) 환자인가요?",
+    help: "혈액내과(IMH)는 갈 수 있는 병동이 111·101·95W(내과중앙)로 한정 — 응급수납 시 다른 병동 수속 위험",
     options: [
-      {label:"예 (혈액종양내과)", next:"night_imho"},
-      {label:"아니오 (다른 내과계)", next:"night_susu"},
+      {label:"예 (혈액내과 IMH)", next:"night_imho"},
+      {label:"아니오 (종양내과·다른 내과계)", next:"night_susu"},
     ]
   },
   night_imho: {
-    q: "병동에 연락해서 자리가 있나요?",
-    help: "해당 병동에 직접 연락하여 병상 여부 확인",
+    q: "111 / 101 / 95W(내과중앙) 중 자리가 있나요?",
+    help: "혈액내과 입실 가능 병동: 111병동 / 101병동 / 95W(내과중앙)",
     options: [
       {label:"있음", next:"night_imho_admit"},
-      {label:"없음", next:"night_imho_wait"},
+      {label:"없음 (3곳 모두)", next:"night_imho_wait"},
     ]
   },
   night_imho_admit: {
-    result: "✅ 해당 병동 연락 후 배정",
-    desc: "혈액종양내과 병동에 입원 예정 인계 후 배정합니다.",
+    result: "✅ 해당 병동 연락 후 자리 받기",
+    desc: "혈액내과 입실 가능 병동(111·101·95W)에 직접 연락하여 자리를 받습니다.",
     actions: [
-      "병동 간호사에게 입원 예정 인계",
+      "111·101·95W 병동 간호사에게 입원 예정 인계",
       "격리·감염 정보 함께 전달",
       "입원지시 옆에 시간/병동 기록 (예: 15:15(1151904))",
     ]
   },
   night_imho_wait: {
     result: "⏸ 입원 대기",
-    desc: "혈액종양내과 병동 자리 없음 — 병상 날 때까지 대기합니다.",
+    desc: "111·101·95W 모두 자리 없음 — 병상 날 때까지 대기합니다.",
     actions: [
       "입원 대기 상태로 유지",
       "주임/주치의에게 상황 공유",
