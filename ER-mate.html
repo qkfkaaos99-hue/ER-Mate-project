@@ -168,7 +168,7 @@
     <span class="hdr-logo" style="background:var(--blue);">EM</span>
     <span class="hdr-title">ER Mate</span>
     <!-- === 버전 === -->
-    <span class="hdr-sub">2026.05.31</span>
+    <span class="hdr-sub">2026.08.31</span>
   </div>
   <div class="hdr-right">
     <button class="btn-theme" onclick="showManual()" title="사용설명서" style="font-size:13px;">❓</button>
@@ -345,14 +345,14 @@ const UNIT_CONSENTS={"ICU":"중환자실입실동의서","CCU":"심혈관내과�
 const BED_ASSIGN_CONTACTS = [
   {name:"허은수",tel:"7247",depts:["NS","OL","AN","DM","외과중앙","OTS입력"]},
   {name:"신다희",tel:"2213",depts:["OS","OT","UR"]},
-  {name:"우세정",tel:"2673",depts:["특실","IMI","내과전담의"]},
-  {name:"김미라",tel:"2941",depts:["IMG","IMN","IMC","RH"]},
-  {name:"김성주",tel:"0825",depts:["IMH(종)","NR","IME"]},
-  {name:"장유진",tel:"4050",depts:["TS","IMR","IMJ","IMA"]},
-  {name:"신예빈",tel:"2683",depts:["MFICU","PS","OG"]},
-  {name:"박유나",tel:"3163",depts:["GS"]},
+  {name:"우세정",tel:"2673",depts:["특실","내과전담의","RH","OG"]},
+  {name:"김미라",tel:"2941",depts:["IMG","IMI","IMC"]},
+  {name:"김성주",tel:"0825",depts:["IMH","IMN","NR","IME","IMA"]},
+  {name:"장유진",tel:"4050",depts:["TS","IMR","IMJ"]},
+  {name:"신예빈",tel:"2683",depts:["MFICU","PS"]},
+  {name:"오유정",tel:"3163",depts:["GS"]},
   {name:"박준우",tel:"2738",depts:["NP"]},
-  {name:"육미진",depts:["IMH(혈)"]},
+  {name:"장소정",depts:["IMH(혈)"]},
 ];
 
 // 병실배정 의사결정 트리 (기준: 절차안내 2026.2.9.)
@@ -1572,11 +1572,12 @@ if (isPsectionMode) {
     "완화의료":  { re: /호스피스|hospice|완화|연명|POLST|DNR/i, icon: "🕊️" },
     "수술/시술": { re: /수술|op\b|시술|stent|insertion|기관지내시경|traction|교체|제거술/i, neg: /시행하였|시행했|시행된|결과/i, icon: "🔪" },
     "항암":      { re: /chemo|항암/i, icon: "💊" },
-    "투약":      { re: /투약|약물|처방|투여|infusion|CRRT|aspirin|LMWH|supplement|irrigation|NPO|loading|스테로이드|dexamethasone/i, neg: /유지되고|유지되어|유지중|투여하였|투여했|투약하였/i, icon: "💊" },
-    "외래":      { re: /외래|OPD|f\/u|follow/i, neg: /내원하였|ER로\s*내원|응급실.*내원|내원한|f\/u하며|f\/u\s*하며|치료중/i, icon: "📅" },
-    "협진":      { re: /의뢰|협진|consult/i, icon: "🏥" },
-    "검사":      { re: /검체|culture|채혈|검사|panel|stain|AFB|PSA|시행해/i, neg: /시행하였|시행했|시행된|결과|소견상/i, icon: "🔬" },
-    "지시":      { re: /exam|평가|확인|모니터/i, icon: "📋" }
+    "투약":      { re: /투약|약물|처방|투여|복용|용량|hold\b|empirical|항생제|G-CSF|infusion|CRRT|aspirin|LMWH|supplement|irrigation|NPO|loading|스테로이드|dexamethasone|mg\s*(qd|bid|tid|hs|q\d)/i, neg: /유지되고|유지되어|유지중|투여하였|투여했|투약하였|복용하였|복용중/i, icon: "💊" },
+    "외래":      { re: /외래|OPD|(f\/u|follow[- ]?up).*(예약|방문|내원|시행|일정|잡)|(예약|방문|일정).*(f\/u|follow[- ]?up)/i, neg: /내원하였|ER로\s*내원|응급실.*내원|내원한|f\/u하며|f\/u\s*하며|치료중/i, icon: "📅" },
+    "협진":      { re: /의뢰|협진|consult|의견\s*(필요|부탁|여쭙)/i, icon: "🏥" },
+    "검사":      { re: /검체|culture|채혈|검사|panel|stain|AFB|PSA|시행해|촬영|EEG|EMG|NCS|EKG|tapping|태핑/i, neg: /시행하였|시행했|시행된|결과|소견상|촬영하였|촬영했/i, icon: "🔬" },
+    "지시":      { re: /exam|평가|확인|모니터/i, icon: "📋" },
+    "권고":      { re: /권고|추천|부탁드리|바랍니다|하십시오|요망|필요하겠|고려/i, neg: /의뢰\s*주셔서|감사합니다/i, icon: "📌" }
   };
 
   // 경어/수식어 축약
@@ -1593,40 +1594,61 @@ if (isPsectionMode) {
     .replace(/\s+/g, ' ').trim().replace(/[;．。]\s*$/, '');
 
   // 배경/인사 필터
-  const bgFilter = /있었던\s*분|분으로,|계획\s*중이었고|내원하였습니다|문의\s*주시면|이어가겠|바탕으로\s*이후|홍준식|배상/;
+  const bgFilter = /있었던\s*분|분으로,|계획\s*중이었고|내원하였습니다|문의\s*주시면|이어가겠|바탕으로\s*이후|배상|상기와\s*같이|의뢰\s*주셔서|이상입니다/;
 
-  mergedSentences.forEach((s, idx) => {
-    if (s.length < 5) return;
-    if (bgFilter.test(s)) return;
+  // ── Step 2.5: 긴 단락 → 문장 단위 분리 (배경문장 때문에 권고문이 통째로 폐기되는 것 방지) ──
+  const splitSentences = [];
+  mergedSentences.forEach(s => {
+    if (s.length > 80 && !s.includes(' — ') && /다\.\s/.test(s)) {
+      s.replace(/(다\.)\s+/g, '$1\u0001').split('\u0001').forEach(p => {
+        const c = p.trim();
+        if (c.length > 5) splitSentences.push(c);
+      });
+    } else {
+      splitSentences.push(s);
+    }
+  });
 
-    let matched = false;
-    for (const [cat, cfg] of Object.entries(actionRe)) {
-      if (cfg.re.test(s) && !(cfg.neg && cfg.neg.test(s))) {
-        const detail = condense(s);
-        if (detail.length < 5) break;
-        if (cat === "외래") {
-          r.opdItems.push(selectedDept + " " + detail);
-          matched = true;
-          break;
-        }
-        r.instructions.push({
-          id: "p_" + idx, task: selectedDept, detail: detail,
-          icon: cfg.icon, category: cat, blockIdx: 0
-        });
-        matched = true;
-        break;
-      }
+  // ── Step 3-A: 종결어미 기반 Tier 판별 (블랙리스트 방식) ──
+  // 액션 어미: 무조건 체크리스트 / 소견 어미: 참고 섹션 / 어미 없음(개조식): 내용 카테고리로 판단
+  const tierActionRe = /부탁\s*드리|권고\s*드리|추천\s*드리|의뢰\s*드리|권유|바랍니다|바라겠|주십시오|하십시오|해\s*주세요|주세요|요망|필요하겠|필요합니다|필요할\s*것|고려|하겠습니다|하겠으며|예정입니다|예정이며|예정으로|시행해|확인\s*부탁|의견\s*(필요|부탁)/;
+  const tierOpinionRe = /생각됩니다|사료됩니다|판단됩니다|보입니다|보이며|관찰됩니다|확인하였|확인되|확인됨|의심됩니다|추정됩니다|소견입니다|없습니다|아닙니다|같습니다|였습니다|하였습니다|했습니다|입니다\s*$/;
+  const actionCatRe = /배치|투약|검사|수술|협진|외래|항암|완화의료/;
+  // ⚠️ 유지보수 지점: 새 노이즈가 보이면 여기에만 추가 (액션 키워드는 더 추가할 필요 없음)
+  const noiseFilter = /있었던\s*분|분으로,|계획\s*중이었고|내원하였습니다|문의\s*주시면|이어가겠|바탕으로\s*이후|배상|드림\s*$|올림\s*$|상기와\s*같이|의뢰\s*주셔서|감사합니다|안녕하|수고하|고생하|회신\s*드립니다|이상입니다|검진했습니다|진료\s*의뢰\s*주신|[가-힣]{2,4}\s*(배상|드림|올림|교수|전임의|전공의)\s*$/;
+  const clinicalRe = /compression|myelopathy|부작용|소견|진단|감별|가능성|lymphoma|chemo|항암|병변|lesion|r\/o|edema|focus/i;
+
+  splitSentences.forEach((s, idx) => {
+    const detail = condense(s);
+    if (detail.length < 6) return;
+    if (noiseFilter.test(detail) || bgFilter.test(detail)) return;
+
+    // 1) 내용 키워드 → 아이콘·카테고리 (추출 여부와는 무관)
+    let cat = null, icon = null;
+    for (const [c, cfg] of Object.entries(actionRe)) {
+      if (cfg.re.test(detail) && !(cfg.neg && cfg.neg.test(detail))) { cat = c; icon = cfg.icon; break; }
     }
-    // 액션 매칭 안 된 문장 → 소견으로 (임상 키워드 있을 때만)
-    if (!matched && s.length > 10) {
-      const clinicalRe = /compression|myelopathy|부작용|소견|진단|감별|가능성|lymphoma|chemo|항암|병변|lesion/i;
-      if (clinicalRe.test(s)) {
-        r.instructions.push({
-          id: "p_op_" + idx, task: selectedDept, detail: condense(s),
-          icon: "🔬", category: "소견", blockIdx: 0
-        });
-      }
-    }
+
+    // 2) 종결어미 → tier 결정
+    let tier;
+    if (tierActionRe.test(detail)) tier = "action";
+    else if (tierOpinionRe.test(detail)) tier = "opinion";
+    else tier = (cat && actionCatRe.test(cat)) ? "action" : "etc";
+
+    // 3) 외래 예약은 별도 리스트로
+    if (cat === "외래" && tier === "action") { r.opdItems.push(selectedDept + " " + detail); return; }
+
+    // 4) 미분류 보정
+    if (!cat) {
+      if (tier === "action") { cat = "권고"; icon = "📌"; }
+      else if (clinicalRe.test(detail)) { cat = "소견"; icon = "🔬"; }
+      else { cat = "기타"; icon = "📎"; }
+    } else if (tier !== "action" && cat === "지시") { cat = "소견"; icon = "🔬"; }
+
+    r.instructions.push({
+      id: "p_" + idx, task: selectedDept, detail: detail,
+      icon: icon, category: cat, tier: tier, blockIdx: 0
+    });
   });
 
   // disposition 판별
@@ -1747,7 +1769,7 @@ function buildChecklist(p){
       task: "["+instr.task+"] " + instr.detail,
       detail: instr.category,
       icon: instr.icon,
-      type:"conditional",
+      type: (instr.tier && instr.tier !== "action") ? "reference" : "conditional",
       highlight: /배치|투약변경|협진|완화의료/.test(instr.category)
     });
   }
@@ -1969,8 +1991,9 @@ function showProtocol(procNames) {
 }
 function render(){
   const c=document.getElementById("resultScreen");
-  const done=Object.values(cs).filter(Boolean).length;
-  const total=cl.length;
+  const refIds=new Set(cl.filter(x=>x.type==="reference").map(x=>x.id));
+  const done=Object.keys(cs).filter(k=>cs[k]&&!refIds.has(k)).length;
+  const total=cl.filter(x=>x.type!=="reference").length;
   const pct=total?Math.round(done/total*100):0;
   
   let h = "";
@@ -2014,6 +2037,10 @@ function render(){
     if(mand.length>0){
       h+=`<div class="section-hdr mand" style="margin-top:6px"><span class="section-dot" style="background:var(--green)"></span>필수 항목</div>`;
       mand.forEach(i=>{h+=rItem(i);});
+    }
+    const ref=cl.filter(x=>x.type==="reference");
+    if(ref.length>0){
+      h+=`<details style="margin-top:8px"><summary>▶ 소견·참고 ${ref.length}건 (액션 아님)</summary>${ref.map(i=>rItem(i)).join('')}</details>`;
     }
   }
   
