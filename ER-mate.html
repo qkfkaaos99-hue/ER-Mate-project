@@ -1492,7 +1492,7 @@ if (isPsectionMode) {
   r.departments = [selectedDept];
 
   // 노이즈 필터
-  const noiseRe = /선생님|안녕하세요|안녕하십니까|감사합니다|드림$|올림$|배상$|배상\.|드림\./;
+  const noiseRe = /^선생님[,\s]|안녕하세요|안녕하십니까|^감사합니다|^의뢰\s*(주셔서|감사)|^회신이?\s*늦|드림$|올림$|배상$|배상\.|드림\./;
   const sigRe = /\b[A-Z]{2,4}\s*(?:F\.|R\d|교수|올림|전임의|전공의)|^[가-힣]{2,4}\s*(배상|드림|올림)/;
   const labRe = /^[A-Z][A-Za-z\/\(\)]+\s+[\d\.]+$|^BUN\s|^Creatinine\s|^eGFR|^Na\(U\)|^CRP\s|^WBC\s|^Hb\s/;
 
@@ -1568,11 +1568,11 @@ if (isPsectionMode) {
 
   // ── Step 3: 소견 vs 액션 분류 ──
   const actionRe = {
-    "배치":      { re: /입원|전원|병상|전과|전동/i, neg: /하시게되면|하게되면|경우|했으나|하였으나|ER로\s*내원|계획\s*중이었/i, icon: "🏥" },
+    "배치":      { re: /입원|전원|병상|전과|전동/i, neg: /하시게되면|하게되면|경우|했으나|하였으나|ER로\s*내원|계획\s*중이었|입원\s*전까지|입원\s*전에/i, icon: "🏥" },
     "완화의료":  { re: /호스피스|hospice|완화|연명|POLST|DNR/i, icon: "🕊️" },
-    "수술/시술": { re: /수술|op\b|시술|stent|insertion|기관지내시경|traction|교체|제거술/i, neg: /시행하였|시행했|시행된|결과/i, icon: "🔪" },
+    "수술/시술": { re: /수술|op\b|시술|stent|insertion|기관지내시경|traction|교체|제거술/i, neg: /시행하였|시행했|시행된|결과|수술\s*부위|수술\s*후|술후/i, icon: "🔪" },
     "항암":      { re: /chemo|항암/i, icon: "💊" },
-    "투약":      { re: /투약|약물|처방|투여|복용|용량|hold\b|empirical|항생제|G-CSF|infusion|CRRT|aspirin|LMWH|supplement|irrigation|NPO|loading|스테로이드|dexamethasone|mg\s*(qd|bid|tid|hs|q\d)/i, neg: /유지되고|유지되어|유지중|투여하였|투여했|투약하였|복용하였|복용중/i, icon: "💊" },
+    "투약":      { re: /투약|약물|약제|처방|투여|복용|용량|hold\b|empirical|항생제|G-CSF|infusion|CRRT|aspirin|LMWH|supplement|irrigation|NPO|loading|스테로이드|dexamethasone|mg\s*(qd|bid|tid|hs|q\d)/i, neg: /유지되고|유지되어|유지중|투여하였|투여했|투약하였|복용하였|복용중/i, icon: "💊" },
     "외래":      { re: /외래|OPD|(f\/u|follow[- ]?up).*(예약|방문|내원|시행|일정|잡)|(예약|방문|일정).*(f\/u|follow[- ]?up)/i, neg: /내원하였|ER로\s*내원|응급실.*내원|내원한|f\/u하며|f\/u\s*하며|치료중/i, icon: "📅" },
     "협진":      { re: /의뢰|협진|consult|의견\s*(필요|부탁|여쭙)/i, icon: "🏥" },
     "검사":      { re: /검체|culture|채혈|검사|panel|stain|AFB|PSA|시행해|촬영|EEG|EMG|NCS|EKG|tapping|태핑/i, neg: /시행하였|시행했|시행된|결과|소견상|촬영하였|촬영했/i, icon: "🔬" },
@@ -1593,29 +1593,63 @@ if (isPsectionMode) {
     .replace(/확인되지\s*않습니다/g, '미확인')
     .replace(/\s+/g, ' ').trim().replace(/[;．。]\s*$/, '');
 
+  // ── 지시 압축: [배경절] + [조건절] + [지시] 구조에서 배경절만 절단 ──
+  // 조건절(~할 경우/~시/~하면)과 다른 지시가 앞에 있으면 자르지 않음 = 임상정보 손실 방지
+  const bgCutRe = /(?:때문에|확인되어|확인되었으며|판단되어|사료되며|생각되며|되어|위하여|위해|있어서|없어서|어려워서|로\s*인해|인하여|준하여|관하여|대하여|대해서는|고려하여)\s+/g;
+  const condRe = /경우|다면|으면|하면|악화시|발생시|증가시|감소할\s*시|지속\s*시|동반\s*시|필요\s*시/;
+  const blockRe = /투여|투약|처방|검사|시행|중단|변경|추가|제거|삽입|배액|촬영|채혈|입원|전원|확인|평가|관찰|모니터/;
+
+  const compress = (s) => {
+    let t = s.replace(/^#\.?\s*/, '').trim();
+    // 1) 배경절 절단 (뒤에서부터 안전한 지점 탐색)
+    const cuts = [];
+    let m; bgCutRe.lastIndex = 0;
+    while ((m = bgCutRe.exec(t)) !== null) cuts.push(m.index + m[0].length);
+    for (let i = cuts.length - 1; i >= 0; i--) {
+      const head = t.slice(0, cuts[i] - 1).replace(bgCutRe, ' '), tail = t.slice(cuts[i]);
+      if (tail.length < 8) continue;
+      if (condRe.test(head) || blockRe.test(head)) continue;
+      t = tail; break;
+    }
+    // 2) 경어 종결부 제거
+    t = t
+      .replace(/[을를]?\s*(부탁|권고|추천|말씀)\s*드립니다\.?\s*$/, '')
+      .replace(/[을를]?\s*해\s*주십시오\.?\s*$/, '')
+      .replace(/[을를]?\s*하여\s*주십시오\.?\s*$/, '')
+      .replace(/[을를]?\s*해\s*주시기\s*바랍니다\.?\s*$/, '')
+      .replace(/[을를]?\s*해\s*보시기\s*바랍니다\.?\s*$/, '')
+      .replace(/[을를]?\s*하시기\s*바랍니다\.?\s*$/, '')
+      .replace(/[을를]?\s*진행해\s*주십시오\.?\s*$/, ' 진행')
+      .replace(/[을를]?\s*시행해\s*주십시오\.?\s*$/, ' 시행')
+      .replace(/\s*필요하겠습니다\.?\s*$/, ' 필요')
+      .replace(/\s*필요합니다\.?\s*$/, ' 필요')
+      .replace(/\s+/g, ' ').trim().replace(/[,\uff0c]$/, '');
+    return t.length >= 6 ? t : s;
+  };
+
   // 배경/인사 필터
   const bgFilter = /있었던\s*분|분으로,|계획\s*중이었고|내원하였습니다|문의\s*주시면|이어가겠|바탕으로\s*이후|배상|상기와\s*같이|의뢰\s*주셔서|이상입니다/;
 
   // ── Step 2.5: 긴 단락 → 문장 단위 분리 (배경문장 때문에 권고문이 통째로 폐기되는 것 방지) ──
   const splitSentences = [];
   mergedSentences.forEach(s => {
-    if (s.length > 80 && !s.includes(' — ') && /다\.\s/.test(s)) {
-      s.replace(/(다\.)\s+/g, '$1\u0001').split('\u0001').forEach(p => {
-        const c = p.trim();
-        if (c.length > 5) splitSentences.push(c);
-      });
-    } else {
-      splitSentences.push(s);
-    }
+    if (s.includes(' — ')) { splitSentences.push(s); return; }
+    // 한글 종결 + 마침표가 문장 경계 (Rt. F / 30mg/day 같은 영문 약어는 안 잘림)
+    let x = s.replace(/([가-힣])\.\s+/g, '$1.\u0001');
+    if (x.length > 90) x = x.replace(/(드리며|드리고),?\s+/g, '$1\u0001');
+    x.split('\u0001').forEach(p => {
+      const c = p.trim();
+      if (c.length > 5) splitSentences.push(c);
+    });
   });
 
   // ── Step 3-A: 종결어미 기반 Tier 판별 (블랙리스트 방식) ──
   // 액션 어미: 무조건 체크리스트 / 소견 어미: 참고 섹션 / 어미 없음(개조식): 내용 카테고리로 판단
-  const tierActionRe = /부탁\s*드리|권고\s*드리|추천\s*드리|의뢰\s*드리|권유|바랍니다|바라겠|주십시오|하십시오|해\s*주세요|주세요|요망|필요하겠|필요합니다|필요할\s*것|고려|하겠습니다|하겠으며|예정입니다|예정이며|예정으로|시행해|확인\s*부탁|의견\s*(필요|부탁)/;
-  const tierOpinionRe = /생각됩니다|사료됩니다|판단됩니다|보입니다|보이며|관찰됩니다|확인하였|확인되|확인됨|의심됩니다|추정됩니다|소견입니다|없습니다|아닙니다|같습니다|였습니다|하였습니다|했습니다|입니다\s*$/;
+  const tierActionRe = /(부탁|권고|추천|의뢰|말씀|권유)\s*드[리립]|권유합니다|바랍니다|바라겠|주십시오|하십시오|해\s*주세요|주세요|요망|필요하겠|필요합니다|고려|하겠습니다|하겠으며|예정입니다|예정이며|예정으로|시행해|확인\s*부탁|의견\s*(필요|부탁)|해\s*주시|해\s*보시|보시고|주시고|하시고|하시도록|하시면서/;
+  const tierOpinionRe = /생각됩니다|사료됩니다|판단됩니다|보입니다|보이며|관찰됩니다|확인하였|확인되|확인됨|의심됩니다|추정됩니다|소견입니다|바\s*있|없습니다|아닙니다|같습니다|였습니다|하였습니다|했습니다|습니다\s*\.?\s*$/;
   const actionCatRe = /배치|투약|검사|수술|협진|외래|항암|완화의료/;
   // ⚠️ 유지보수 지점: 새 노이즈가 보이면 여기에만 추가 (액션 키워드는 더 추가할 필요 없음)
-  const noiseFilter = /있었던\s*분|분으로,|계획\s*중이었고|내원하였습니다|문의\s*주시면|이어가겠|바탕으로\s*이후|배상|드림\s*$|올림\s*$|상기와\s*같이|의뢰\s*주셔서|감사합니다|안녕하|수고하|고생하|회신\s*드립니다|이상입니다|검진했습니다|진료\s*의뢰\s*주신|[가-힣]{2,4}\s*(배상|드림|올림|교수|전임의|전공의)\s*$/;
+  const noiseFilter = /있었던\s*분|분으로,|계획\s*중이었고|내원하였습니다|문의\s*주시면|이어가겠|바탕으로\s*이후|배상|드림\s*$|올림\s*$|상기와\s*같이|의뢰\s*주셔서|감사합니다|안녕하|수고하|고생하|회신\s*드립니다|이상입니다|검진했습니다|진료\s*의뢰\s*주신|죄송합니다|^[=\-─_~]{3,}$|[가-힣]{2,4}\s*(배상|드림|올림|교수|전임의|전공의)\s*$/;
   const clinicalRe = /compression|myelopathy|부작용|소견|진단|감별|가능성|lymphoma|chemo|항암|병변|lesion|r\/o|edema|focus/i;
 
   splitSentences.forEach((s, idx) => {
@@ -1636,7 +1670,7 @@ if (isPsectionMode) {
     else tier = (cat && actionCatRe.test(cat)) ? "action" : "etc";
 
     // 3) 외래 예약은 별도 리스트로
-    if (cat === "외래" && tier === "action") { r.opdItems.push(selectedDept + " " + detail); return; }
+    if (cat === "외래" && tier === "action") { r.opdItems.push(selectedDept + " " + compress(detail)); return; }
 
     // 4) 미분류 보정
     if (!cat) {
@@ -1647,6 +1681,7 @@ if (isPsectionMode) {
 
     r.instructions.push({
       id: "p_" + idx, task: selectedDept, detail: detail,
+      brief: compress(detail),
       icon: icon, category: cat, tier: tier, blockIdx: 0
     });
   });
@@ -1766,8 +1801,8 @@ function buildChecklist(p){
   for(const instr of p.instructions){
     items.push({
       id: instr.id,
-      task: "["+instr.task+"] " + instr.detail,
-      detail: instr.category,
+      task: "["+instr.task+"] " + (instr.brief || instr.detail),
+      detail: (instr.brief && instr.brief !== instr.detail) ? instr.detail : instr.category,
       icon: instr.icon,
       type: (instr.tier && instr.tier !== "action") ? "reference" : "conditional",
       highlight: /배치|투약변경|협진|완화의료/.test(instr.category)
