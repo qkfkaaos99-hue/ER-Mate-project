@@ -168,8 +168,10 @@
   .mode-hint{font-size:12px;color:var(--text);margin-bottom:6px;min-height:14px;}
   .mode-hint.guide{font-size:13px;line-height:1.7;padding:8px 12px;background:var(--warn-bg);border:1px solid var(--warn-border);border-left:4px solid var(--yellow);border-radius:4px;}
   .mode-hint.guide b{color:var(--yellow);}
+  .mode-hint.guide{min-height:88px;box-sizing:border-box;}
   .dept-select.need{outline:2px solid var(--yellow);}
   .input-header{min-height:34px;box-sizing:border-box;}
+  @media (max-width:480px){ .hdr-sub{display:none;} .btn-new{font-size:12px;padding:6px 10px;} .hdr-title{white-space:nowrap;} #inputText{font-size:16px;} }
   .kw-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
   .kw-chips.all{max-height:120px;overflow-y:auto;}
   .kw-chip{padding:5px 11px;border:1px solid var(--input-border);border-radius:12px;background:transparent;color:var(--text);font-size:12px;cursor:pointer;}
@@ -313,6 +315,10 @@
   </div>
 </div>
 
+<script>
+/* MK2 진단용: 폰에서 스크립트 오류가 나면 화면 위에 빨간 줄로 표시 */
+window.addEventListener('error',function(e){try{var d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#b00020;color:#fff;font-size:12px;padding:6px 10px;word-break:break-all;';d.textContent='⚠️ 오류: '+e.message+' (줄 '+e.lineno+')';(document.body||document.documentElement).appendChild(d);}catch(_){}});
+</script>
 <script>
 // ==========================================
 // [DOMAIN: CONFIG & CONSTANTS] 환경 설정 및 정적 상수 데이터
@@ -2395,8 +2401,8 @@ function fuzzyOpen(t){
 }
 // ── MK2: 모드 선택 / 키워드 칩 ──
 const MODE_CFG = {
-  discharge: { hint:"📋 복사 범위: <b>[입원경과]</b> 부터 <b>[퇴원장소]</b> 까지<br>진료기록조회 → 퇴원기록 열기 → 드래그 복사 → 아래에 붙여넣기", guide:true, ph:"퇴원기록을 붙여넣으세요\nEnter = 실행 / Shift+Enter = 줄바꿈", chips:false, dept:false },
-  consult:   { hint:"① 오른쪽 위에서 <b>과 선택</b><br>② 회신 내용 중 <b>지시사항(plan / [P]) 부분만</b> 드래그 복사 → 아래에 붙여넣기", guide:true, ph:"타과 회신 지시사항을 붙여넣으세요\nEnter = 실행 / Shift+Enter = 줄바꿈", chips:false, dept:true },
+  discharge: { hint:"📋 복사 범위: <b>[입원경과]</b> 부터 <b>[퇴원장소]</b> 까지<br>진료기록조회에서 드래그 복사 → 붙여넣기", guide:true, ph:"퇴원기록을 붙여넣으세요\nEnter = 실행 / Shift+Enter = 줄바꿈", chips:false, dept:false },
+  consult:   { hint:"① 오른쪽 위에서 <b>과 선택</b><br>② 회신 중 <b>지시사항(plan / [P])</b>만 복사<br>③ 아래에 붙여넣기", guide:true, ph:"타과 회신 지시사항을 붙여넣으세요\nEnter = 실행 / Shift+Enter = 줄바꿈", chips:false, dept:true },
   search:    { hint:"🔍 <b>시술명·업무 키워드</b> 입력 또는 아래 칩 선택<br>한영 실수·띄어쓰기·초성(ㅅㅎ)·오타도 찾아줘요", guide:true, ph:"시술명 또는 업무 키워드 입력\nEnter = 실행", chips:true, dept:false }
 };
 let curMode = "search";
@@ -2409,7 +2415,8 @@ function setMode(m){
   ds.classList.toggle("need", c.dept);
   ds.style.display = c.dept ? "" : "none";
   if(!c.dept) ds.value = "";
-  renderKwChips(); ta.focus();
+  renderKwChips();
+  if (window.matchMedia && matchMedia("(hover: hover)").matches) ta.focus();
 }
 const KW_TOP = ["ERCP","CAG","CT","MRI","C-line","수혈","CIV","고칼륨"];
 let kwShowAll = false;
