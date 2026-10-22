@@ -643,7 +643,7 @@ night_surgery_direct: {
 const EXAMPLES=[{label:"퇴원",text:"[입원결과]\n퇴원\n[향후계획]\n호흡곤란 진행, 객혈 등 있으면 ER 재내원 교육함.\n산소포화도 측정 잘 하시도록함."},
                 {label:"입원",text:"GS adm, NPO\nOP 내일 1st"},
                 {label:"전원",text:"전원, 00병원 NS로\nCT/MRI CD 복사 필요"},
-                {label:"컨설트",text:"1. 귀과적으로 출혈의 위험성 높지 않다면, LMWH 단기간 유지, 추후 감량, 중단을 추천드립니다. 이에 대해서는 추후 신경과 외래로 FU 해주십시오.\n2. Sacral insufficiency fracture에 대해서는 정형외과 협진 추천드립니다.\n3. 신경과적으로는 LMWH 투약 유지한다면 aspirin 투약을 지속할 이유는 없을 것으로 판단합니다."}];
+                {label:"컨설트",mode:"consult",dept:"GS",text:"P>\n# 복부 CT상 acute cholecystitis 소견으로 판단됩니다.\n# NPO 유지해 주시고, ceftriaxone 2g IV qd 투약 부탁드립니다.\n# 내일 오전 PTGBD 시행 예정이니 시술 동의서 받아주세요.\n# 4시간 간격 V/S 및 abdominal pain 양상 관찰 부탁드립니다.\n# GS 입원 치료 진행하겠습니다. 감사합니다."}];
 
 let activeTitle = null; // 검색 모드용 타이틀 변수
 
@@ -2219,8 +2219,9 @@ window.onload = function() {
           const b=document.createElement("button");
           b.className="btn-ex";
           b.textContent=ex.label;
-          b.addEventListener('touchend', function(e){ e.preventDefault(); document.getElementById("inputText").value=ex.text; generate(ex.text); });
-          b.addEventListener('click', function(){ document.getElementById("inputText").value=ex.text; generate(ex.text); });
+          const runEx = function(){ if(ex.mode && typeof setMode==="function") setMode(ex.mode); if(ex.dept) document.getElementById("deptSelect").value=ex.dept; document.getElementById("inputText").value=ex.text; generate(ex.text); };
+          b.addEventListener('touchend', function(e){ e.preventDefault(); runEx(); });
+          b.addEventListener('click', runEx);
           ec.appendChild(b);
         });
     }
