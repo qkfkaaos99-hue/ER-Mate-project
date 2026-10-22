@@ -204,9 +204,9 @@
 <main>
   <div id="inputScreen">
     <div class="mode-bar">
-      <button class="mode-btn" data-mode="discharge" onclick="setMode('discharge')">📋 퇴원기록<small>퇴실 체크리스트</small></button>
-      <button class="mode-btn" data-mode="consult" onclick="setMode('consult')">🏥 타과회신<small>지시사항 정리</small></button>
       <button class="mode-btn" data-mode="search" onclick="setMode('search')">🔍 시술·업무<small>준비사항 검색</small></button>
+      <button class="mode-btn" data-mode="consult" onclick="setMode('consult')">🏥 타과회신<small>지시사항 정리</small></button>
+      <button class="mode-btn" data-mode="discharge" onclick="setMode('discharge')">📋 퇴원기록<small>퇴실 체크리스트</small></button>
     </div>
     <div class="input-panel">
      <div class="input-header">
@@ -255,7 +255,7 @@
      <details class="tips"><summary>💡 사용 팁 보기</summary><div>
       <strong>💡 Tip:</strong> 'ERCP', 'PTBD' 처럼 단어만 입력하면 시술 준비사항을 바로 알려드려요!<br>
 <strong>📖 가이드:</strong> '수혈', 'CIV', 'enema', '고칼륨', 'I/O', '간호기록' 등 업무 키워드도 검색 가능!<br>
-<strong>📋 퇴원기록:</strong> 진료기록조회 → <u>입원경과</u> ~ <u>퇴원장소</u>까지 드래그 복사 후 붙여넣기!<br>
+<strong>📋 퇴원기록:</strong> 진료기록조회 → <u>입원결과</u> ~ <u>퇴원장소</u>까지 드래그 복사 후 붙여넣기!<br>
 <strong>🏥 컨설트:</strong> 우측 과 선택 → 회신 중 지시사항 부분만 복사 붙여넣기!
     </div></details>
     
@@ -1416,7 +1416,7 @@ else if (/ICU|중환자실/i.test(t)) {
 }
 
 // --- 포맷 판별 (드롭다운 선택 = P섹션 모드 / 퇴원기록 / 일반) ---
-const isDischargeSummary = /^\[?\s*입원경과/m.test(t);
+const isDischargeSummary = /^\[?\s*(입원경과|입원결과|향후계획)\s*\]?\s*$/m.test(t) || (typeof curMode !== "undefined" && curMode === "discharge");
 const isPsectionMode = !!selectedDept;
 const isConsultFormat = isDischargeSummary || isPsectionMode;
   
@@ -1719,47 +1719,31 @@ if (isPsectionMode) {
 
 } else if (isDischargeSummary) {
   // ========== 퇴원기록 파싱 ==========
-  // 1. 향후계획 섹션
-  const planMatch = t.match(/향후계획\]?\s*\n([\s\S]*?)(?=\[?퇴원장소|$)/i);
-  if (planMatch) {
-    const planLines = planMatch[1].split(/\n/).map(l => l.trim()).filter(l => l.length > 1 && !/^귀가$|^집$|^타병원$|^요양병원$/.test(l));
-    planLines.forEach((line, idx) => {
-      if (idx >= 5) return;
+  // MK2: 입원결과·향후계획을 문장/절 단위로 쪼개서 '요청·안내'만 추출 (줄글·회신 붙여넣기 대응)
+  const _dsumClauses = (txt) => txt
+    .replace(/(하였고|했고|하시고|해주시고|드리고|되고|되며|하며|하고|는데|으나|이나)[,\s]+/g, "$1\n")
+    .split(/\n|\.\s+|\.$/).map(x=>x.trim().replace(/\.$/,"")).filter(x=>x.length>3 && /[가-힣a-zA-Z]{2}/.test(x) && !/^@|>$/.test(x));
+  const _REQ = /주세요|주시고|주시면|부탁|바랍니다|하시도록|보시도록|안내함|안내하|교육함|교육하|재내원|재방문/;
+  const _NARR = /한 것으로|된 것으로|확인되는데|확인되고|보입니다|보임$|필요는 없|하였고|했고|진행하며|퇴실함|호전되어|있으나|않은|조절하여/;
+  const _ACT = /유지|지속|시작|중단|복용|처방|투약|f\/u|외래|확인/i;
+  const dsumPick = (txt, tag) => {
+    _dsumClauses(txt).forEach((c, idx) => {
+      if (/^(귀가|집|타병원|요양병원|퇴원|전원)$/.test(c)) return;
+      const keep = _REQ.test(c) || (!_NARR.test(c) && _ACT.test(c));
+      if (!keep) return;
+      if (/(외래|OPD).*(보시|내원|예약|f\/u|방문)|내원시켜/i.test(c)) { if (!r.opdItems.includes(c)) r.opdItems.push(c); return; }
+      if (/안내|교육|하시도록|재내원|재방문/.test(c)) { if (!r.educationItems.includes(c)) r.educationItems.push(c); return; }
       let cat = "지시", icon = "📋";
-      if (/외래|OPD|f\/u|follow/i.test(line)) { r.opdItems.push(line); return; }
-      else if (/교육|재내원|재방문/i.test(line)) { r.educationItems.push(line); return; }
-      else if (/O2|산소|투약|복용|투여|처방/i.test(line)) { cat = "투약"; icon = "💊"; }
-      else if (/검사|촬영|lab|채혈/i.test(line)) { cat = "검사"; icon = "🔬"; }
-      r.instructions.push({
-        id: "dsum_" + idx,
-        task: "향후계획",
-        detail: line,
-        icon: icon,
-        category: cat,
-        blockIdx: 0
-      });
+      if (/lab|검사|ECG|culture|profile|U\/A|확인해/i.test(c)) { cat = "검사"; icon = "🔬"; }
+      if (/처방|투약|복용|유지|지속|시작|중단|\bPO\b|\bIV\b/i.test(c)) { cat = "투약"; icon = "💊"; }
+      if (r.instructions.some(x=>x.detail===c)) return;
+      r.instructions.push({ id: "dsum_" + tag + "_" + idx, task: tag, detail: c, icon: icon, category: cat, blockIdx: 0 });
     });
-  }
-
-  // 2. 입원결과 섹션 — 외래/교육/처방 언급 추출
-  const resultMatch = t.match(/입원결과\]?\s*\n?([\s\S]*?)(?=\[?향후계획|$)/i);
-  if (resultMatch) {
-    const resultLines = resultMatch[1].split(/\n/).map(l => l.trim()).filter(l => l.length > 5);
-    resultLines.forEach((line, idx) => {
-      if (/외래|OPD|f\/u|follow/i.test(line)) { r.opdItems.push(line); }
-      else if (/교육|재내원|재방문|설명함/.test(line)) { r.educationItems.push(line); }
-      else if (/처방|투약|복용|투여/.test(line)) {
-        r.instructions.push({
-          id: "res_" + idx,
-          task: "입원결과",
-          detail: line,
-          icon: "💊",
-          category: "투약",
-          blockIdx: 0
-        });
-      }
-    });
-  }
+  };
+  const resultMatch = t.match(/입원결과\]?\s*\n?([\s\S]*?)(?=\[?향후계획|\[?퇴원장소|$)/i);
+  if (resultMatch) dsumPick(resultMatch[1], "입원결과");
+  const planMatch = t.match(/향후계획\]?\s*\n([\s\S]*?)(?=\[?퇴원장소|$)/i);
+  if (planMatch) dsumPick(planMatch[1], "향후계획");
 
   // 3. 입원경과 섹션 — 교육 및 외래 언급 추출 (IMN note 포함)
   const courseMatch = t.match(/입원경과\]?\s*\n?([\s\S]*?)(?=\[?입원결과|$)/i);
@@ -2257,16 +2241,16 @@ function _manHome(){ return `
 <div class="mn-sec">
   <div class="mn-title">⚡ 3가지 사용 모드 — 위쪽 버튼으로 선택</div>
   <div class="mn-card">
-    <div class="mn-card-title">📋 퇴원기록</div>
-    <div class="mn-card-sub">퇴원기록 붙여넣기 → 퇴실 체크리스트 자동생성<br><span style="color:var(--text3)">복사범위: 진료기록조회 → <b>[입원경과] ~ [퇴원장소]</b>까지 드래그<br>향후계획·입원결과·입원경과에서 외래/교육/처방 항목 자동추출</span></div>
+    <div class="mn-card-title">🔍 시술·업무</div>
+    <div class="mn-card-sub">아래 키워드 칩을 누르거나 시술명·업무 키워드 입력 → 지침 즉시 조회<br><span style="color:var(--text3)">예: ERCP, PTBD, 수혈, CIV, 고칼륨, Night업무 · 전체 목록은 '전체 보기'</span></div>
   </div>
   <div class="mn-card">
     <div class="mn-card-title">🏥 타과회신</div>
     <div class="mn-card-sub">① 오른쪽 위에서 <b>과 선택</b> → ② 회신 중 <b>지시사항(plan / [P]) 부분만</b> 복사 → 붙여넣기<br><span style="color:var(--text3)">회신 전체보다 지시사항만 넣어야 더 정확하게 나옵니다</span></div>
   </div>
   <div class="mn-card">
-    <div class="mn-card-title">🔍 시술·업무</div>
-    <div class="mn-card-sub">아래 키워드 칩을 누르거나 시술명·업무 키워드 입력 → 지침 즉시 조회<br><span style="color:var(--text3)">예: ERCP, PTBD, 수혈, CIV, 고칼륨, Night업무 · 전체 목록은 '전체 보기'</span></div>
+    <div class="mn-card-title">📋 퇴원기록</div>
+    <div class="mn-card-sub">퇴원기록 붙여넣기 → 퇴실 체크리스트 자동생성<br><span style="color:var(--text3)">복사범위: 진료기록조회 → <b>[입원결과] ~ [퇴원장소]</b>까지 드래그<br>입원결과·향후계획에서 요청·안내 문장만 골라 외래/교육/투약/검사로 정리</span></div>
   </div>
 </div>
 <div class="mn-sec">
@@ -2279,7 +2263,7 @@ function _manHome(){ return `
     <tr><td><b>☀️ / 🌙</b></td><td>다크/라이트 테마 전환 (저장됨)</td></tr>
   </table>
 </div>
-<div class="mn-tip">📋 <b>복사 팁:</b> 퇴원기록은 <b>[입원경과] ~ [퇴원장소]</b>, 타과회신은 <b>plan / [P]</b> 부분만</div>`; }
+<div class="mn-tip">📋 <b>복사 팁:</b> 퇴원기록은 <b>[입원결과] ~ [퇴원장소]</b>, 타과회신은 <b>plan / [P]</b> 부분만</div>`; }
 
 function _manProc(){ 
   const groups=[
@@ -2326,7 +2310,7 @@ function _manCl(){
 function _manFaq(){ return `
 <div class="mn-sec"><div class="mn-title">❓ 자주 묻는 질문</div>
 ${[
-  ["분석이 이상하게 나와요","원문보기/수정 패널에서 수정 후 '다시생성' 클릭. 복사 범위를 입원경과~퇴원장소로 재확인하세요."],
+  ["분석이 이상하게 나와요","원문보기/수정 패널에서 수정 후 '다시생성' 클릭. 복사 범위를 입원결과~퇴원장소로 재확인하세요."],
   ["시술이 체크리스트에 안 잡혀요","컨설트·퇴원기록 모드에서는 시술 자동매칭이 비활성화됩니다. 시술명만 따로 검색하세요."],
   ["모바일에서 버튼을 눌러도 반응이 없어요","입력창을 한 번 탭해서 키보드를 닫은 다음, ⚡ 버튼을 다시 눌러보세요."],
   ["껐다 켜면 다크/라이트 설정이 초기화돼요","카카오톡 인앱 브라우저나 시크릿 탭에서 열면 설정이 저장되지 않습니다. 사파리나 크롬으로 직접 열어주세요."],
@@ -2401,7 +2385,7 @@ function fuzzyOpen(t){
 }
 // ── MK2: 모드 선택 / 키워드 칩 ──
 const MODE_CFG = {
-  discharge: { hint:"📋 복사 범위: <b>[입원경과]</b> 부터 <b>[퇴원장소]</b> 까지<br>진료기록조회에서 드래그 복사 → 붙여넣기", guide:true, ph:"퇴원기록을 붙여넣으세요\nEnter = 실행 / Shift+Enter = 줄바꿈", chips:false, dept:false },
+  discharge: { hint:"📋 복사 범위: <b>[입원결과]</b> 부터 <b>[퇴원장소]</b> 까지<br>진료기록조회에서 드래그 복사 → 붙여넣기", guide:true, ph:"퇴원기록을 붙여넣으세요\nEnter = 실행 / Shift+Enter = 줄바꿈", chips:false, dept:false },
   consult:   { hint:"① 오른쪽 위에서 <b>과 선택</b><br>② 회신 중 <b>지시사항(plan / [P])</b>만 복사<br>③ 아래에 붙여넣기", guide:true, ph:"타과 회신 지시사항을 붙여넣으세요\nEnter = 실행 / Shift+Enter = 줄바꿈", chips:false, dept:true },
   search:    { hint:"🔍 <b>시술명·업무 키워드</b> 입력 또는 아래 칩 선택<br>한영 실수·띄어쓰기·초성(ㅅㅎ)·오타도 찾아줘요", guide:true, ph:"시술명 또는 업무 키워드 입력\nEnter = 실행", chips:true, dept:false }
 };
