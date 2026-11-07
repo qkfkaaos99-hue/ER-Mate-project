@@ -252,6 +252,7 @@
     <div class="examples" id="exCon">
     </div>
 
+    <button class="btn-ex" style="width:100%;margin-top:10px;padding:12px 8px;font-size:13px;font-weight:700;color:var(--green);border-color:var(--green);" onclick="showBedFlow()">🔀 입원 병실배정 · 원무 (클릭으로 안내)</button>
      <details class="tips"><summary>💡 사용 팁 보기</summary><div>
       <strong>💡 Tip:</strong> 'ERCP', 'PTBD' 처럼 단어만 입력하면 시술 준비사항을 바로 알려드려요!<br>
 <strong>📖 가이드:</strong> '수혈', 'CIV', 'enema', '고칼륨', 'I/O', '간호기록' 등 업무 키워드도 검색 가능!<br>
@@ -337,7 +338,7 @@ const MANDATORY={discharge:[{id:"m_d1",task:"퇴원약 확인",detail:"정규:�
                             {id:"m_d6",task:"응급실퇴실간호기록",detail:"퇴실일시=간호기록'퇴원함'시간",icon:"✍️"},
                             {id:"m_d7",task:"침상정리",detail:"#59삐록, 케이블·이름표·쓰레기정리",icon:"🧹"}],
                  admission:[{id:"m_a1",task:"입원지시 확인",detail:"내과→EMO / 외과→진료과직접발행",icon:"📋"},
-                            {id:"m_a2",task:"병실배정",detail:"정규(9A~6P): 원무1과 배정 / 비정규(6P~익일6A): 응급수납 배정(중증응급·외과 전체). ICU/Sub ICU/Stroke unit→진료과 직접 배정. 입원지시 옆에 시간 기록!",icon:"🛏️"},
+                            {id:"m_a2",task:"병실배정",detail:"정규(평일 9A~6P·토 9A~2P): 원무과 / 비정규: 비중증→병동 전화, 중증·GS분과→라벨 응급원무수납 / 5A30~9A 배정 없음 / ICU·Sub ICU·Stroke→진료과 직접. 입원지시 옆 시간 기록!",icon:"🛏️"},
                             {id:"m_a3",task:"입원수속 안내",detail:"보호자에게 입원지시라벨→응급원무수납안내",icon:"🏥"},
                             {id:"m_a4",task:"약 반납 확인",detail:"HIS→약반납(일반)→반납요청수량→약봉지 반납표시→정규:약사님/비정규:NA님 전달",icon:"↩️"},
                             {id:"m_a5",task:"전과전동기록지",detail:"인계전 올려놓기",icon:"📄"},
@@ -380,158 +381,166 @@ const BED_ASSIGN_CONTACTS = [
 // 병실배정 의사결정 트리 (기준: 절차안내 2026.2.9.)
 const BED_FLOW_TREE = {
   root: {
-    q: "지금 어느 시간대인가요?",
-    help: "평일/주말·공휴일 및 시각에 따라 절차가 달라집니다",
+    q: "지금 언제인가요?",
+    help: "정규: 평일 9A~6P · 토 9A~2P / 비정규: 평일 6P~5A30 · 토 2P 이후 · 일요일",
     options: [
-      {label:"평일 정규 (9A~6P)", next:"reg_weekday"},
-      {label:"평일 비정규 (6P~익일 6A)", next:"night"},
-      {label:"토요일", next:"holiday_last"},
-      {label:"일요일/공휴일", next:"holiday_normal"},
+      {label:"평일 9A~6P", next:"reg_direct_q"},
+      {label:"토요일 9A~2P", next:"reg_direct_q"},
+      {label:"평일 6P~5A30 · 토 2P 이후 · 일요일/공휴일", next:"night_direct_q"},
       {label:"5A30~9A", next:"dead_zone"},
     ]
   },
   dead_zone: {
-    result: "🚫 병상 배정 업무 없음",
-    desc: "5A30~9A는 병동 정리 시간입니다. 9A 이후 원무1과 배정 절차로 진행하세요.",
-    actions: []
+    result: "🚫 입원 배정 없음",
+    desc: "5A30~9A는 병동 정리 시간이라 입원 배정을 하지 않습니다.",
+    actions: ["9A 이후 정규 절차(입원원무과)로 진행"]
   },
-  reg_weekday: {
+  direct_icu: {
+    result: "✅ 진료과에서 직접 배정",
+    desc: "ICU / Sub ICU / Stroke unit은 진료과에서 직접 배정합니다.",
+    actions: ["진료과에 배정 확인", "입실 동의서 받기", "입원지시 옆에 배정 시간/병동 기록 (예: 15:15(1151904))"]
+  },
+  er_bed_accept: {
+    q: "간호간병 병동 입실을 수락하나요?",
+    help: "환자/보호자에게 간호간병 병동 입실 수락 여부 확인",
+    options: [
+      {label:"수락", next:"er_bed_admit"},
+      {label:"거부", next:"er_bed_wait"},
+      {label:"해당없음", next:"er_bed_admit"},
+    ]
+  },
+  er_bed_admit: {
+    result: "✅ 입원원무과(병실배정 담당자)에 배정요청",
+    desc: "정규시간 중증응급 · 간호간병 수락 또는 해당없음",
+    actions: ["입원원무과 병실배정 담당자에게 배정요청", "격리·감염 정보 함께 전달", "입원지시 옆에 배정 시간/병동 기록 (예: 15:15(1151904))"]
+  },
+  er_bed_wait: {
+    result: "⏸ 입원 대기",
+    desc: "간호간병 거부 — 다른 병상 날 때까지 대기합니다.",
+    actions: ["입원 대기 상태로 유지", "주임/주치의에게 상황 공유"]
+  },
+  imhm_125: {
+    result: "⏸ 125W 대기",
+    desc: "비중증 입원전담전문의(IMHM) 병동 입원 환자는 125W 대기입니다.",
+    actions: ["125W 대기로 안내", "주임/주치의에게 상황 공유"]
+  },
+
+  /* ── 정규시간 ── */
+  reg_direct_q: {
     q: "진료과 직접배정 대상인가요?",
     help: "ICU / Sub ICU / Stroke unit",
     options: [
-      {label:"예 (ICU·Sub ICU·Stroke 등)", next:"reg_direct_icu"},
+      {label:"예 (ICU·Sub ICU·Stroke)", next:"direct_icu"},
       {label:"아니오", next:"reg_er_bed_q"},
     ]
   },
   reg_er_bed_q: {
-    q: "응급병상 배정이 가능한가요?",
-    help: "입전의 / IMG 소화기내과(→112·114) / 95 / 38 응급병상",
+    q: "중증응급 환자일까요?",
+    help: "38W 단기응급병동 (입전·EMO는 중증응급만, 타과 자리는 비중증도) / IMG 소화기내과(→112·114) / 95W 내과중앙(분과 무관 내과: 구글시트에 이름 올라오면 전원전담이 확인)",
     options: [
-      {label:"예", next:"night_er_bed_accept"},
+      {label:"예", next:"er_bed_accept"},
+      {label:"아니오", next:"reg_imhm_q"},
+    ]
+  },
+  reg_imhm_q: {
+    q: "비중증 입원전담전문의(IMHM) 환자인가요?",
+    help: "중증응급은 38W(입전 10자리)로, 비중증은 125W 대기",
+    options: [
+      {label:"예", next:"imhm_125"},
       {label:"아니오", next:"reg_blood_q"},
-    ]
-  },
-  reg_direct_icu: {
-    result: "✅ 진료과에서 직접 배정",
-    desc: "ICU / Sub ICU / Stroke unit은 진료과에서 직접 배정합니다.",
-    actions: [
-      "진료과에 배정 확인",
-      "입원지시 옆에 배정 시간/병동 기록 (예: 15:15(1151904))",
-      "입실 동의서 받기"
-    ]
-  },
-  reg_direct_er: {
-    result: "✅ 응급병상 연락 후 배정",
-    desc: "입전의·소화기내과·95·38·IMG 응급병상은 응급병상 체계로 배정합니다.",
-    actions: [
-      "해당 응급병상에 연락",
-      "배정 후 입원지시 옆에 시간/병동 기록 (예: 15:15(1151904))"
     ]
   },
   reg_blood_q: {
     q: "혈액내과 환자인가요?",
-    help: "예: 101/111 등 (3~5월 장소정)",
+    help: "혈액내과는 진료과 CPN이 배정",
     options: [
       {label:"예 (혈액내과)", next:"reg_blood"},
       {label:"아니오", next:"reg_wonmu"},
     ]
   },
   reg_blood: {
-    result: "✅ 혈액내과 CPN에 배정요청",
-    desc: "혈액내과 진료과 내 배정담당자(CPN)에게 연락합니다.",
-    actions: [
-      "CPN 연락 → 배정요청",
-      "입원지시 옆에 시간/병동 기록 (예: 15:15(1151904))"
-    ]
+    result: "✅ 혈액내과 CPN에게 연락",
+    desc: "혈액내과 진료과 내 배정담당자(CPN)에게 배정 요청합니다.",
+    actions: ["CPN 연락 → 배정요청", "입원지시 옆에 배정 시간/병동 기록 (예: 15:15(1151904))"]
   },
   reg_wonmu: {
-    result: "✅ 원무1과 / 외과사무실에 배정요청",
-    desc: "정규시간 기본 경로입니다.",
+    result: "✅ 입원원무과(병실배정 담당자)에 배정요청",
+    desc: "정규시간 기본 경로입니다. (외과는 외과사무실)",
     actions: [
-      "원무1과(내과계) 또는 외과사무실에 배정요청",
+      "입원원무과 병실배정 담당자에게 배정요청",
       "중증/비중증 표기",
-      "1개 진료과 내 2명 이상 시 순위 표기",
+      "1개 진료과 내 2명 이상이면 순위 표기",
       "감염/격리 정보 포함",
-      "진료과 혈액/종양·산과/부인과 구분",
-      "배정 후 입원지시 옆에 시간/병동 기록 (예: 15:15(1151904))"
+      "병동 구분: 혈액/종양 · 산과/부인과",
+      "입원지시 옆에 배정 시간/병동 기록 (예: 15:15(1151904))"
     ],
-    warn: "9A/3P 전체 list는 담당 HN(9A)·전원전담(3P)이 일괄 메일 송부. 그 이후 추가분은 원무1과 각 진료과 담당에게 메신저(~6P)."
+    warn: "자리 없으면 대기 명단 메일: 월~목 9A 수간호사 · 3P 전원전담 / 금 9A·3P, 토 9A 전원전담"
   },
-  night: {
-    q: "현재 시각이 5A30 이전인가요?",
-    help: "5A30까지 응급수납 요청 가능 / 병동은 5A59까지 통보",
-    options: [
-      {label:"예 (6P~5A30)", next:"night_direct_q"},
-      {label:"아니오 (5A30 이후)", next:"night_late"},
-    ]
-  },
-  night_late: {
-    result: "⏸ 병상배정 HOLD",
-    desc: "5A30 이후는 응급수납 요청 불가. 9A 원무1과 정규 절차로 진행합니다.",
-    actions: ["9A에 원무1과 정규 배정 절차로 이어서 진행"]
-  },
+
+  /* ── 비정규시간 ── */
   night_direct_q: {
     q: "진료과 직접배정 대상인가요?",
     help: "ICU / Sub ICU / Stroke unit",
     options: [
-      {label:"예 (ICU·Sub ICU·Stroke 등)", next:"reg_direct_icu"},
-      {label:"아니오", next:"night_er_bed"},
+      {label:"예 (ICU·Sub ICU·Stroke)", next:"direct_icu"},
+      {label:"아니오", next:"night_38w_q"},
     ]
   },
-  night_er_bed: {
-    q: "응급병상 배정이 가능한가요?",
-    help: "입전의 / IMG 소화기내과(→112·114) / 95 / 38 응급병상 · ⚠️ 판단 어려우면 주임/주치의/수간호사님께 확인",
+  night_38w_q: {
+    q: "38W(단기응급병동) 입원인가요?",
+    help: "입전 · EMO 자리는 중증응급만 / 타과 자리 빌려가는 경우는 비중증도 가능",
     options: [
-      {label:"예", next:"night_er_bed_accept"},
-      {label:"아니오·모름", next:"night_surgery_q"},
+      {label:"예 (38W)", next:"night_38w_emo"},
+      {label:"아니오", next:"night_severe_q"},
     ]
   },
- night_surgery_q: {
-  q: "외과계 환자인가요?",
-  help: "야간에 외과계(GS·NS·TS·OS 등)는 중증/비중증 무관 전체 응급수납 배정",
-  options: [
-    {label:"예 (외과계)", next:"night_surgery_type_q"},
-    {label:"아니오 (내과계)", next:"night_severe_q"},
-  ]
-},
-night_surgery_type_q: {
-  q: "어느 외과계열인가요?",
-  help: "진료과 확인 후 선택 — 배정 경로는 동일하나 라벨에 세부과 명시 필요",
- options: [
-  {label:"일반외과 (GS)", next:"night_susu"},
-  {label:"신경외과 (NS) / 흉부외과 (TS) / 정형외과 (OS)", next:"night_surgery_direct"},
-]
-},
-night_surgery_direct: {
-  result: "✅ 담당 진료과 의사에게 병실 확인 후 병동 직접 연락",
-  desc: "NS·TS·OS는 응급수납 경유 없이 진료과 의사에게 어느 병동으로 갈지 확인 후, 해당 병동에 직접 연락합니다.",
-  actions: [
-    "담당과 의사에게 입원 병동 확인",
-    "해당 병동 간호사에게 입원 예정 인계",
-    "입원지시 옆에 시간/병동 기록 (예: 15:15(1151904))",
-    "격리·감염 정보 병동에 함께 전달",
-  ]
-
-},
   night_severe_q: {
-    q: "중증응급환자인가요?",
-    help: "환자 이름에 주황색 컬러박스가 있는 환자",
+    q: "중증응급 환자일까요?",
+    help: "환자 이름에 주황색 컬러박스가 있는 환자 · ⚠️ 판단 어려우면 주임/주치의/수간호사님께 확인",
     options: [
-      {label:"예 (중증응급)", next:"night_severe_dept_q"},
-      {label:"아니오", next:"night_consult_q"},
+      {label:"예 (중증응급)", next:"night_sev_dept_q"},
+      {label:"아니오 (비중증)", next:"night_nonsev_dept_q"},
     ]
   },
-  night_severe_dept_q: {
-    q: "혈액내과(IMH) 환자인가요?",
-    help: "혈액내과(IMH)는 갈 수 있는 병동이 111·101·95W(내과중앙)로 한정 — 응급수납 시 다른 병동 수속 위험",
+  night_sev_dept_q: {
+    q: "진료과가 정확히 어디인가요?",
+    help: "⚠️ 신경외과(NS) · 흉부외과(TS) · 정형외과(OS) · 성형외과(PS)는 'GS 외과'가 아닙니다 → 응급원무수납 라벨 보내지 않기",
     options: [
-      {label:"예 (혈액내과 IMH)", next:"night_imho"},
-      {label:"아니오 (종양내과·다른 내과계)", next:"night_susu"},
+      {label:"GS 외과 — 외상 · 대장항문 · 유방 · 간 · 담췌 · 위장관 · 내분비 · 이식혈관", next:"night_label"},
+      {label:"NS 신경외과 / TS 흉부외과 / OS 정형외과 / PS 성형외과", next:"night_surgery_direct"},
+      {label:"혈액내과", next:"night_imho"},
+      {label:"그 외 (종양내과·다른 내과 등)", next:"night_label"},
     ]
+  },
+  night_nonsev_dept_q: {
+    q: "진료과가 정확히 어디인가요?",
+    help: "GS 외과는 비중증이어도 라벨 → 응급원무수납 ·  신경외과(NS) · 흉부외과(TS) · 정형외과(OS) · 성형외과(PS)는 'GS 외과'가 아닙니다 → 응급원무수납 라벨 보내지 않기",
+    options: [
+      {label:"GS 외과 — 외상 · 대장항문 · 유방 · 간 · 담췌 · 위장관 · 내분비 · 이식혈관", next:"night_label"},
+      {label:"NS 신경외과 / TS 흉부외과 / OS 정형외과 / PS 성형외과", next:"night_surgery_direct"},
+      {label:"입원전담전문의(IMHM)", next:"imhm_125"},
+      {label:"그 외", next:"night_nonsevere"},
+    ]
+  },
+  night_surgery_direct: {
+    result: "✅ 담당과 의사 확인 후 병동 직접 연락",
+    desc: "응급원무수납을 거치지 않고, 진료과 의사에게 입원 병동을 확인한 뒤 병동에 직접 연락합니다.",
+    actions: ["담당과 의사에게 입원 병동 확인", "해당 병동에 입원 예정 인계", "격리·감염 정보 함께 전달", "입원지시 옆에 배정 시간/병동 기록 (예: 15:15(1151904))"]
+  },
+  night_nonsevere: {
+    result: "✅ 병동에 직접 전화",
+    desc: "비정규시간 비중증 환자는 응급원무수납이 아니라 병동에 직접 연락합니다.",
+    actions: ["해당 병동에 전화 → 자리 확인 및 입원 예정 인계", "격리·감염 정보 함께 전달", "입원지시 옆에 배정 시간/병동 기록 (예: 15:15(1151904))"]
+  },
+  night_38w_emo: {
+    result: "✅ 주치의 확인 후 38W에 직접 전화",
+    desc: "비정규시간 38W 입원은 입전 · EMO · 타과 모두 응급원무수납을 거치지 않고 38W에 직접 연락합니다.",
+    actions: ["주치의에게 38W 입원 맞는지 확인", "38W에 전화 → 자리 확인 및 입원 예정 인계", "격리·감염 정보 함께 전달", "입원지시 옆에 배정 시간/병동 기록 (예: 15:15(1151904))"],
+    warn: "입전 · EMO 자리는 중증응급만 가능 (타과 자리는 비중증도 가능) · 단기입원 후 주진료과 전동 위한 컨설트 필요"
   },
   night_imho: {
-    q: "111 / 101 / 95W(내과중앙) 중 자리가 있나요?",
-    help: "혈액내과 입실 가능 병동: 111병동 / 101병동 / 95W(내과중앙)",
+    q: "111 / 101 / 95W 중 자리가 있나요?",
+    help: "혈액내과 입실 가능 병동: 111 · 101 · 95W(내과중앙)",
     options: [
       {label:"있음", next:"night_imho_admit"},
       {label:"없음 (3곳 모두)", next:"night_imho_wait"},
@@ -539,111 +548,30 @@ night_surgery_direct: {
   },
   night_imho_admit: {
     result: "✅ 해당 병동 연락 후 자리 받기",
-    desc: "혈액내과 입실 가능 병동(111·101·95W)에 직접 연락하여 자리를 받습니다.",
-    actions: [
-      "111·101·95W 병동 간호사에게 입원 예정 인계",
-      "격리·감염 정보 함께 전달",
-      "입원지시 옆에 시간/병동 기록 (예: 15:15(1151904))",
-    ]
+    desc: "111 · 101 · 95W 중 자리 있는 병동에 직접 연락합니다.",
+    actions: ["해당 병동에 입원 예정 인계", "격리·감염 정보 함께 전달", "입원지시 옆에 배정 시간/병동 기록 (예: 15:15(1151904))"]
   },
   night_imho_wait: {
     result: "⏸ 입원 대기",
-    desc: "111·101·95W 모두 자리 없음 — 병상 날 때까지 대기합니다.",
-    actions: [
-      "입원 대기 상태로 유지",
-      "주임/주치의에게 상황 공유",
-    ]
+    desc: "111 · 101 · 95W 모두 자리 없음 — 병상 날 때까지 대기합니다.",
+    actions: ["입원 대기 상태로 유지", "주임/주치의에게 상황 공유"]
   },
-
-  night_er_bed_accept: {
-    q: "간호간병을 수락하나요?",
-    help: "환자/보호자가 간호간병 병동 입실을 수락하는지 확인",
-    options: [
-      {label:"수락", next:"night_er_bed_admit"},
-      {label:"거부", next:"night_er_bed_wait"},
-    ]
-  },
-  night_er_bed_admit: {
-    result: "✅ 해당 병동 연락 후 배정",
-    desc: "응급병상 있음 + 간호간병 수락 — 해당 병동에 직접 연락 후 배정합니다.",
+  night_label: {
+    result: "✅ 입원지시라벨 → 응급원무수납",
+    desc: "비정규시간 중증응급 · GS 외과 분과 경로입니다. (NS·TS·OS·PS는 해당 없음)",
     actions: [
-      "해당 병동 간호사에게 입원 예정 인계",
-      "격리·감염 정보 함께 전달",
-      "입원지시 옆에 시간/병동 기록 (예: 15:15(1151904))",
-    ]
-  },
-  night_er_bed_wait: {
-    result: "⏸ 입원 대기",
-    desc: "응급병상 있으나 간호간병 거부 — 다른 병상 날 때까지 대기합니다.",
-    actions: [
-      "입원 대기 상태로 유지",
-      "주임/주치의에게 상황 공유",
-    ]
-  },
-  night_susu: {
-    result: "✅ 응급수납에 배정요청",
-    desc: "야간 응급수납 배정 경로입니다.",
-    actions: [
-      "입원지시 라벨을 응급수납에 전달 (방 없을 수도 있다는 설명)",
-      "라벨에 격리·진료과 정보 기록",
-      "세부 진료과 작성 (IMH 종양/혈액, 산과/부인과 구분)",
-      "감염/격리 정보 포함",
+      "입원지시라벨 작성: 병동 구분(산과/부인과 · 종양/혈액) + 격리 유무",
+      "라벨을 응급원무수납에 전달 (방이 없을 수도 있다고 보호자 설명)",
       "수속 후 병동에 인계 가능시간 확인",
-      "입원지시 옆에 시간/병동 기록 (예: 15:15(1151904))"
+      "입원지시 옆에 배정 시간/병동 기록 (예: 15:15(1151904))"
     ],
-    warn: "18시(토요일 3P): 주임간호사가 미배정 중증응급 이름 라벨 리스트 일괄 전달"
-  },
-  night_consult_q: {
-    q: "컨설트 회신에 입원요청이 명확한가요?",
-    help: "⚠️ 논의 필요 — 주임/주치의/수간호사님께 확인",
-    options: [
-      {label:"예 (명확)", next:"night_ward"},
-      {label:"아니오·모름", next:"night_hold"},
-    ]
-  },
-  night_ward: {
-    result: "✅ 본병상 배정 (조건부)",
-    desc: "가용병상 확인 후 배정합니다.",
-    actions: [
-      "본병상 배정순서 확인",
-      "가용병상 확인 후 배정",
-    ],
-    warn: "⚠️ 종양·잔여병상 배정 금지 / 연속배정 안 되게 주의"
-  },
-  night_hold: {
-    result: "⏸ 병상배정 HOLD",
-    desc: "정규시간 원무1과를 통해 입원요청 진행.",
-    actions: ["9A 정규시간에 원무1과 경로로 재진행"]
-  },
-  holiday_normal: {
-    q: "현재 시각이 5A30 이전인가요?",
-    help: "일요일/공휴일은 종일 비정규(응급수납) 절차. 5A30까지 응급수납 요청 가능",
-    options: [
-      {label:"예 (~5A30)", next:"night_direct_q"},
-      {label:"아니오 (5A30 이후)", next:"night_late"},
-    ]
-  },
-  holiday_last: {
-    q: "현재 시각이 어느 구간인가요?",
-    help: "토요일: 9A~2P 원무1과 / 3P 이후 응급수납",
-    options: [
-      {label:"9A~2P", next:"holiday_last_am"},
-      {label:"3P 이후", next:"holiday_normal"},
-    ]
-  },
-  holiday_last_am: {
-    result: "✅ 원무1과 배정 (토요일 오전)",
-    desc: "9A 전원전담이 전체 list 송부 → 토요일 9A~2P 원무1과 배정.",
-    actions: [
-      "원무1과에 배정요청",
-      "입원지시 옆에 시간/병동 기록 (예: 15:15(1151904))"
-    ]
+    warn: "자리 안 나면 주임간호사가 평일 6P · 토 3P · 일 9A에 대기환자 라벨을 응급원무수납에 일괄 전달"
   },
 };
 const EXAMPLES=[{label:"퇴원",text:"[입원결과]\n퇴원\n[향후계획]\n호흡곤란 진행, 객혈 등 있으면 ER 재내원 교육함.\n산소포화도 측정 잘 하시도록함."},
                 {label:"입원",text:"GS adm, NPO\nOP 내일 1st"},
                 {label:"전원",text:"전원, 00병원 NS로\nCT/MRI CD 복사 필요"},
-                {label:"컨설트",mode:"consult",dept:"IMR",text:"호흡기계 증상이 저명하고 infection focus는 pneumonia로 판단됩니다. 항암치료 중이며 최근 반복 입원력 고려하여 pip/tazo 투약하여 주시고, 시행하신 미생물학적 검사 결과 확인 후 조정 필요하겠습니다. 7일 이상 항생제 투약하고, 임상 경과에 따라 투약 기간 조정하여 주십시오. O2 demand 없고 CT 상 extent가 크지는 않으나 항암치료 중인 면역저하자임을 고려하여 입원 치료 권유드립니다. 감사합니다."}];
+                {label:"컨설트",mode:"consult",dept:"GS",text:"P>\n# 복부 CT상 acute cholecystitis 소견으로 판단됩니다.\n# NPO 유지해 주시고, ceftriaxone 2g IV qd 투약 부탁드립니다.\n# 내일 오전 PTGBD 시행 예정이니 시술 동의서 받아주세요.\n# 4시간 간격 V/S 및 abdominal pain 양상 관찰 부탁드립니다.\n# GS 입원 치료 진행하겠습니다. 감사합니다."}];
 
 let activeTitle = null; // 검색 모드용 타이틀 변수
 
@@ -1189,6 +1117,32 @@ const GUIDE_DB = {
       {cat:"수간호사/전원전담 정규업무",txt:"평일 9시·15시(원무1과 당직일 9시): 미배정 입원지시 명단 일괄 → 원무1과 메일 발송"},
       {cat:"Trouble shooting",txt:"순번표대로 배정된 병실이 1인실이고 환자 거부 시: 다음날 정규시간 배정으로 미루고, 뒷순위 병동 배정 안 함"},
       {cat:"Trouble shooting",txt:"중증응급 아닌 환자 2명 이상·본병상 1개월 때: 진료과 협의 후 배정보류"},
+    ]
+  },
+  "입원원무": {
+    keywords: /입원\s*원무|원무|입원\s*배정|병실\s*배정|병상\s*배정|응급수납|입원지시\s*라벨|입원\s*대기|38W|단기응급|125W|95W|내과중앙/i,
+    icon: "🏥",
+    items: [
+      {cat:"상황별 안내",txt:"__BED_FLOW_BTN__"},
+      {cat:"① 정규시간 → 입원원무과",txt:"평일 9A~6P"},
+      {cat:"① 정규시간 → 입원원무과",txt:"토요일 9A~2P"},
+      {cat:"② 비정규시간",txt:"평일 6P~5A30 / 토요일 2P 이후 / 일요일 종일"},
+      {cat:"② 비정규시간",txt:"비중증 → 병동에 직접 전화"},
+      {cat:"② 비정규시간",txt:"중증 → 입원지시라벨 작성 → 응급원무수납에 전달"},
+      {cat:"② 비정규시간",txt:"라벨 기재: 병동 구분(산과/부인과, 종양/혈액) + 격리 유무"},
+      {cat:"⏸ 배정 없음",txt:"⚠️ 5A30~9A: 병동 정리 시간 → 입원 배정 안 함"},
+      {cat:"38W 단기응급병동",txt:"자리: 입전 10 (IMHM, 지정교수 없음) / EMO 10 (EMO과) / 타과 6"},
+      {cat:"38W 단기응급병동",txt:"⚠️ 입전 · EMO 자리는 중증응급만 가능 / 타과 자리는 비중증도 가능"},
+      {cat:"38W 단기응급병동",txt:"비정규시간: 주치의에게 38W 입원 확인 → 38W에 직접 전화"},
+      {cat:"38W 단기응급병동",txt:"단기입원 후 주진료과 전동 위한 컨설트 필요"},
+      {cat:"과·병동별",txt:"비중증 입원전담전문의 병동 → 125W 대기"},
+      {cat:"과·병동별",txt:"95W 내과중앙 (분과 무관 내과): 진료의배정 구글시트에 이름 올라오면 전원전담이 자리 확인"},
+      {cat:"과·병동별",txt:"혈액내과 → 혈액내과 CPN에게 연락"},
+      {cat:"외과 (GS 분과 · TS/NS/OS/PS 제외)",txt:"해당: 외상, 대장항문, 유방, 간, 담췌, 위장관, 내분비, 이식혈관"},
+      {cat:"외과 (GS 분과 · TS/NS/OS/PS 제외)",txt:"비정규시간 → 응급원무수납에 입원지시라벨"},
+      {cat:"대기환자 라벨 일괄 (주임 → 응급원무수납)",txt:"입원자리 없던 중증응급: 평일 6P / 토 3P / 일 9A"},
+      {cat:"대기환자 전체 메일",txt:"월~목 9A: 수간호사 / 월~목 3P: 전원전담"},
+      {cat:"대기환자 전체 메일",txt:"금 9A·3P, 토 9A: 전원전담"},
     ]
   },
   "chest tube": {
@@ -2044,9 +1998,9 @@ function showProtocol(procNames) {
 }
 function render(){
   const c=document.getElementById("resultScreen");
-  const refIds=new Set(cl.filter(x=>x.type==="reference").map(x=>x.id));
+  const refIds=new Set(cl.filter(x=>x.type==="reference"||/^__/.test(x.task)).map(x=>x.id));
   const done=Object.keys(cs).filter(k=>cs[k]&&!refIds.has(k)).length;
-  const total=cl.filter(x=>x.type!=="reference").length;
+  const total=cl.filter(x=>x.type!=="reference"&&!/^__/.test(x.task)).length;
   const pct=total?Math.round(done/total*100):0;
   
   let h = "";
@@ -2291,7 +2245,7 @@ function _manGuide(){
     {l:"⏰ 근무별 업무",kws:["Day업무","Night업무","NA업무","call업무"]},
     {l:"💊 투약·처치",kws:["수혈","CIV","고칼륨","mix금기","투약속도","TDM","ACTH","투석","heparin","dalteparin","terlipressin","statin","steroid","lasix","Grasin","Anti투약","파상풍","post seizure","chest tube"]},
     {l:"📝 간호기록",kws:["간호기록","간호진단","I/O","드레싱주기"]},
-    {l:"🔧 업무절차",kws:["신환접수","약반납","마약반납","접수취소","이송","enema","A-line","케모포트배양"]},
+    {l:"🔧 업무절차",kws:["입원원무","신환접수","약반납","마약반납","접수취소","이송","enema","A-line","케모포트배양"]},
   ];
   let h=`<div class="mn-sec"><div class="mn-title">📖 업무 가이드 DB — 탭하면 바로 조회</div>`;
   groups.forEach(g=>{
