@@ -743,7 +743,7 @@ const PROCEDURE_DB = {
     important: false,
   },
   "C-line": {
-    keywords: /c-line|central line|중심정맥관|chemoport|hickman|\bPICC\b|\bIJC\b|perm cath/i,
+        keywords: /c-line|central line|중심정맥관|hickman|\bPICC\b|\bIJC\b|perm cath/i,
     prep: ["중심정맥 도관삽입술 동의서 (lumen 수 주치의 확인)","22G IV + Main fluid or KVO fluid (CIV 사용 중이면 새 IV 필요)","금식 없음 (진정 시: 고형 6~8hr, 유동식 2~3hr)","1달 이내 Lab 확인 (INR<2.0, PLT>2만)","상의 속옷 탈의","Change/revision 시 연결 수액 모두 제거"],
     med: [],
     post: ["V/S check","삽입부위 oozing/bleeding 관찰 (필요시 sandbag 압박)","중심정맥관 원위부 위치 주치의 확인 후 사용","채혈 가능 여부 주치의 확인"],
@@ -1227,7 +1227,7 @@ const GUIDE_DB = {
     ]
   },
    "chemoport": {
-    keywords: /chemoport.*culture|케모포트.*배양|포트.*culture|\bheparin\b|헤파린|heparin\s*lock/i,
+    keywords: /chemo\s*port|\bc-?port\b|케모\s*포트|\bheparin\b|헤파린/i,
     icon: "🧫",
     items: [
       {cat:"① 준비",txt:"Chemoport needle: 투약실 t cannular 넣는 곳에 있음"},
