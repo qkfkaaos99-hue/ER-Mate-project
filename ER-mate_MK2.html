@@ -188,7 +188,7 @@
     <span class="hdr-logo" style="background:var(--blue);">EM</span>
     <span class="hdr-title">ER Mate</span>
     <!-- === 버전 === -->
-    <span class="hdr-sub">MK2 · 2026.10.23</span>
+    <span class="hdr-sub">MK2 · 2026.11.08</span>
   </div>
   <div class="hdr-right">
     <button class="btn-theme" onclick="showManual()" title="사용설명서" style="font-size:13px;">❓</button>
@@ -805,8 +805,8 @@ const PROCEDURE_DB = {
     important: false,
   },
   "Stroke": {
-    keywords: /stroke|뇌졸중|SU|Stroke Unit|\bSU\b/i,
-    prep: ["뇌졸중집중치료실 입실 동의서 확인"],
+    keywords: /stroke|뇌졸중|Stroke Unit|\bSU\b/i,
+    prep: ["뇌졸중집중치료실 입실 동의서 확인", "보호자 24hr 1인 상주 필수"],
     med: ["DAPT 투여 스케줄 확인"],
     post: ["104W에 자리확인"],
     warning: ["⚠️ Neurological change 발생 시 즉시 보고", "⚠️ 낙상 고위험군 관리"],
@@ -867,14 +867,7 @@ const GUIDE_DB = {
       {cat:"동의서",txt:"심혈관내과중환자실 입실동의서 필요"},
     ]
   },
-  "Stroke": {
-    keywords: /stroke.*unit|뇌졸중집중/i,
-    icon: "🏥",
-    items: [
-      {cat:"동의서",txt:"뇌졸중집중치료실동의서 필요"},
-      {cat:"안내",txt:"보호자 24hr 1인 상주 필수 ☏0309"},
-    ]
-  },
+
   "LICU": {
     keywords: /\bLICU\b|간집중치료실/i,
     icon: "🏥",
@@ -1071,7 +1064,7 @@ const GUIDE_DB = {
     ]
   },
   "약반납": {
-    keywords: /약.*반납|반납.*약|남은약|퇴원약.*반납/i,
+    keywords: /(?:^|[^마])약.*반납|반납.*(?<!마)약|남은약|퇴원약.*반납/i,
     icon: "↩️",
     items: [
       {cat:"반납",txt:"이미 올라온 약: HIS → 약반납(일반) → 반납요청수량 입력"},
