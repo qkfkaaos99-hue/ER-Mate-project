@@ -1177,15 +1177,6 @@ const GUIDE_DB = {
       {cat:"주의",txt:"양쪽 팔에 따로 주기"},
     ]
   },
-  "heparin": {
-    keywords: /\bheparin\b|헤파린|heparinization/i,
-    icon: "💉",
-    items: [
-      {cat:"투약",txt:"IVS max 4000 unit"},
-      {cat:"투약",txt:"Heparinization 시 반드시 몸무게 측정"},
-      {cat:"참고",txt:"Heparin 1:100 희석 — 휴온스 heparin 1000unit/10cc (옴니셀 접수)"},
-    ]
-  },
   "dalteparin": {
     keywords: /dalteparin|달테파린|\bLMWH\b|저분자헤파린/i,
     icon: "💉",
@@ -1235,14 +1226,17 @@ const GUIDE_DB = {
       {cat:"주의",txt:"⚠️ 150mcg랑 혼동주의!!"},
     ]
   },
-  "chemoport": {
-    keywords: /chemoport.*culture|케모포트.*배양|포트.*culture/i,
+   "chemoport": {
+    keywords: /chemoport.*culture|케모포트.*배양|포트.*culture|\bheparin\b|헤파린|heparin\s*lock/i,
     icon: "🧫",
     items: [
-      {cat:"준비",txt:"Chemoport needle: 투약실 t cannular 넣는 곳에 있음"},
-      {cat:"주의",txt:"주임쌤한테 쓴다고 말하기 (주임쌤이 카운트)"},
-      {cat:"오더",txt:"Blood culture [central catheter, 혈액] — chemoport"},
-      {cat:"오더",txt:"휴온스 헤파린 1000unit/10ml(Heparin 1:100 희석) 오더 받아서 드리기"},
+      {cat:"① 준비",txt:"Chemoport needle: 투약실 t cannular 넣는 곳에 있음"},
+      {cat:"① 준비",txt:"네임라벨에 날짜 시간 몇G인지 쓰고, 주임선생님한테 쓴다고 말하기 (주임선생님이 카운트)"},
+      {cat:"② 배양",txt:"Blood culture [central catheter, 혈액] — chemoport"},
+      {cat:"③ Heparin lock",txt:"휴온스 헤파린 1000unit/10ml (= 100 unit/mL) 오더 받기 (옴니셀 접수)"},
+      {cat:"③ Heparin lock",txt:"배양 후 N/S flushing → heparin 3cc lock"},
+      {cat:"③ Heparin lock",txt:"⚠️ 고위험 의약품 — 농도(100 unit/mL)·용량 재확인"},
+      {cat:"참고",txt:"needle 1주일마다 교환 / 미사용 시 최소 4주에 한 번 heparinization"},
     ]
   },
   "call업무": {
